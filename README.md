@@ -19,7 +19,7 @@ TODO 90% complete
 
 See `example.py`, which drives the module.
 
-```
+```python
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
