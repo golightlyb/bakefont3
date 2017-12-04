@@ -52,26 +52,35 @@ class pack:
 
     def data(self):
         # sort by id for indexing
+        # returns a bytes object
         self._glyphs.sort(key=lambda glyph: glyph.id64)
+        size = self._size
+        glyphs = self._glyphs
+        fonts = self._fonts
+        sizes = self._fontSizes # indexed by font - TODO sort
 
-
+        return bf.encode(size, fonts, sizes, glyphs)
 
 
     def __init__(self, renderResults, sizes=None):
         if sizes is None: sizes = size_seq()
         self._glyphs = []
         self._fonts = [] # font names
-        self._fontpairs = set()
+        self._fontSizes = {} # indexed to a list of sizes
         if not renderResults: return
 
         # ordered list of font names
         _fonts = []
         _seen = set()
+        _fontSizes = {}
 
         for render in renderResults:
             name = render.font.name
             if not name in _seen:
                 _fonts.append(name)
+                _seen.add(name)
+                print(_fonts.index(name))
+                _fontSizes[_fonts.index(name)] = set()
 
         _fonts.sort(key=str)
 
@@ -82,12 +91,14 @@ class pack:
         # -- ignore any duplicates of font+size+glyph
         for render in renderResults:
             fontId = _fonts.index(render.font.name)
+            _fontSizes[fontId].add(render.size)
             size   = render.size
-            self._fontpairs.add((size << 32) + (fontId << 48))
 
             for glyph in render.glyphs:
-                #key = "%d/%d/%d" % (fontId, size, glyph.code)
-                key = glyph.code + (size << 32) + (fontId << 48)
+
+                # we support fractional font sizes so we are weird with the size
+                key = glyph.code + (int(size * 64) << 32) + (fontId << 48)
+
                 if not key in _seen:
                     # we stomp on the glyph datastructure so need a copy
                     # to avoid corrupting them if method calls are
@@ -102,6 +113,7 @@ class pack:
                     _seen.add(key)
 
         self._fonts  = _fonts
+        self._fontSizes = _fontSizes
         self._glyphs = _glyphs # we stomp on each glyph
         self._size   = 0
 
