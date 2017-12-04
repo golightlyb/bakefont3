@@ -1,9 +1,11 @@
 # bakefont3 #
 
-*bakefont3* is a python3 module for rasterising font glyphs into a texture
+*bakefont3* is a python3 module for rasterising font glyphs into a RGBA texture
 atlas.
 
-TODO 90% complete
+![Example](./docs/example.png)
+
+TODO data export too
 
 
 ## Features ##

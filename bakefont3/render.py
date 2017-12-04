@@ -1,6 +1,6 @@
 import bakefont3 as bf
 from PIL import Image
-import math
+import numpy as np
 
 
 class glyph:
@@ -27,13 +27,17 @@ class glyph:
         width = bitmap.width
         height = bitmap.rows
         src = bitmap.buffer
-        dest = Image.new('L', (width, height), None)
+        dest = None
 
         # encode as PIL image
-        for y in range(height):
-            for x in range(width):
-                c = src[x + (y * bitmap.pitch)]
-                dest.putpixel((x, y), c)
+        if (width > 0) and (height > 0):
+            arr = np.zeros(shape=(height,width), dtype=np.uint8)
+            for y in range(height):
+                for x in range(width):
+                    c = src[x + (y * bitmap.pitch)]
+                    arr[y,x] = c
+
+            dest = Image.fromarray(arr, mode="L")
 
         self.width = width
         self.height = height

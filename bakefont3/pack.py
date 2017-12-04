@@ -1,4 +1,7 @@
 import bakefont3 as bf
+import numpy as np
+from PIL import Image
+
 
 def size_seq():
     # an infinite sequence of doubling sizes
@@ -17,7 +20,31 @@ class pack:
         return self._size
 
     def image(self):
-        pass
+        channels = [
+            Image.new("L", (self.size, self.size), 0),
+            Image.new("L", (self.size, self.size), 0),
+            Image.new("L", (self.size, self.size), 0),
+            Image.new("L", (self.size, self.size), 0),
+        ]
+
+        for g in self._glyphs:
+            if not g.image: continue
+            channels[g.z].paste(g.image, (g.x, g.y, g.x + g.width, g.y + g.height))
+
+        # convert each channel to a numpy array
+        img8 = [None] * 4
+        for i in range(0, 4):
+            data = channels[i].getdata()
+            img = np.fromiter(data, np.uint8)
+            img = np.reshape(img, (channels[i].width, channels[i].height))
+            img8[i] = img
+
+        # merge each channel into a RGBA image
+        image = np.stack((img8[0], img8[1], img8[2], img8[3]), axis=-1)
+
+        image = Image.fromarray(image, mode='RGBA')
+        return image
+
 
     def data(self):
         pass
@@ -67,7 +94,14 @@ class pack:
 
     @staticmethod
     def fit(size, glyphs):
-        spaces = bf.btree(bf.bbox(0, 0, 0, size, size , 4)) # 4=RGBA channels
+        print("    fitting: trying size %dx%d" % (size, size))
+        if not glyphs: return True
+
+        spaces = bf.tritree(bf.bbox(0, 0, 0, size, size , 4)) # 4=RGBA channels
+
+        num = len(glyphs)
+        count = 0
+        last_pc = -100
 
         for glyph in glyphs:
             if glyph.width and glyph.height:
@@ -76,7 +110,17 @@ class pack:
                 # stash the size
                 glyph.x = fit.x0
                 glyph.y = fit.y0
-                glyph.z = fit.z0
+                # we reverse the layers so that people don't think
+                # their image is invisible because there's less information
+                # in the alpha layer
+                glyph.z = 3 - fit.z0
+
+            # status
+            count += 1
+            pc = int(100.0 * (count / num))
+            if (pc - last_pc >= 5):
+                last_pc = pc
+                print("    fitting: %d%%" % pc)
 
         return True
 

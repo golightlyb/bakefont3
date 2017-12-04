@@ -32,7 +32,7 @@ class bbox:
         return (self.z1 - self.z0)
 
 
-class btree:
+class tritree:
     # trinary tree node where each node is a bounding box. If the node has no
     # children, its bounding box represents empty space. Otherwise, its
     # bounding box is split below and to the right and outwards by exactly
@@ -125,8 +125,8 @@ class btree:
         out    = bbox(self.x0,     self.x0,     self.z0 + 1, self.x1,     self.y1, self.z1)
         fitbox = bbox(self.x0,     self.y0,     self.z0, self.x0 + w, self.y0 + h, self.z0 + 1)
 
-        self.right = btree(right)
-        self.down  = btree(down)
-        self.out   = btree(out)
+        self.right = tritree(right)
+        self.down  = tritree(down)
+        self.out   = tritree(out)
 
         return fitbox

@@ -45,18 +45,6 @@ charset_greek_and_coptic = bf.charset(
 charset_custom = bf.charset(
     charset_windows_1252,
 
-    charset_latin_extended_a,
-    charset_latin_extended_b,
-    charset_latin_extended_c,
-    charset_latin_extended_additional,
-
-    charset_greek_and_coptic,
-
-    charset_arrows,
-    charset_emoticons,
-    charset_geometric_shapes,
-    charset_mathematical_operators,
-
     "Ŀŀ",                   # Catalan
     "ČčĎďĚěŇňŘřŠšŤťŮůŽž",   # Czech
     'Ĳ', 'ĳ',               # Dutch ligatures
@@ -93,19 +81,29 @@ font_liberation_monospace_bold    = bf.font("Monospace Bold",  "/usr/share/fonts
 
 
 tasks = [
-    (font_liberation_monospace_regular, 10, bf.charset("FPS: 0123456789")),
+    (font_liberation_monospace_bold,    14, bf.charset("FPS: 0123456789")),
     (font_liberation_monospace_regular, 12, charset_simple),
-    (font_liberation_sans_regular,      12, charset_latin_1),
+    (font_liberation_monospace_regular, 14, charset_simple),
+    (font_liberation_monospace_regular, 16, charset_simple),
+    (font_liberation_monospace_regular, 18, charset_simple),
 
-    ##(font_liberation_sans_regular,      12, charset_custom),
-    ##(font_liberation_sans_regular,      14, charset_custom),
-    ##(font_liberation_sans_regular,      16, charset_custom),
+    (font_liberation_sans_regular,      12, charset_custom),
+    (font_liberation_sans_regular,      14, charset_custom),
+    (font_liberation_sans_regular,      16, charset_custom),
+    (font_liberation_sans_regular,      18, charset_custom),
+
+    (font_liberation_sans_bold,         12, charset_custom),
+    (font_liberation_sans_bold,         14, charset_custom),
+    (font_liberation_sans_bold,         16, charset_custom),
+    (font_liberation_sans_bold,         18, charset_custom),
+    (font_liberation_sans_bold,         22, charset_custom),
 
     # as a test, note that overlapping sets don't waste any extra space
-    (font_liberation_sans_regular,      14, charset_ascii),
+    # (font_liberation_sans_regular,      14, charset_ascii),
 ]
 
 
+print("Rasterising glyphs for each (font, size, charset) task")
 results = []
 for i, task in enumerate(tasks):
     print("    task %d of %d" % (i+1, len(tasks)))
@@ -120,6 +118,15 @@ print("Packing...")
 result = bf.pack(results)
 
 print("> The atlas fits into a square of size %dx%d (4 channel)" % (result.size, result.size))
+
+print("Saving results...")
+img = result.image()
+img.save(outfilename+".png")
+channels = img.split()
+channels[0].save(outfilename+"-r.png")
+channels[1].save(outfilename+"-g.png")
+channels[2].save(outfilename+"-b.png")
+channels[3].save(outfilename+"-a.png")
 
 # bf.packResult.saveImage(path)   - save the baked texture atlas
 # bf.packResult.saveData(path) - save kerning, lookup, size data etc.
