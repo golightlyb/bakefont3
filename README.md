@@ -65,21 +65,7 @@ result.data().save(outfilename+".bf3")  # kerning, lookup, size data etc.
 
 ## Dependencies ##
 
-**freetype-py - Python binding for the freetype library**
-
-    git clone https://github.com/rougier/freetype-py
-    cd freetype-py
-    sudo python3 ./setup.py install
-
-**pillow - The friendly PIL fork**
-
-    git clone https://github.com/python-pillow/Pillow.git
-    cd Pillow
-    sudo python3 ./setup.py install
-
-**numpy
-
-    sudo pip3 install numpy
+    sudo pip3 install Pillow numpy freetype-py
 
 
 ## COPYING ##
