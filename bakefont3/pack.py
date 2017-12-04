@@ -5,7 +5,7 @@ import copy
 
 
 def size_seq():
-    # an infinite sequence of doubling square size pairs
+    """an sequence of doubling square size pairs"""
     size = 64
     while True:
         yield (size, size)
@@ -16,6 +16,17 @@ def size_seq():
 
 
 class pack:
+    """Once glyphs have been rasterised, this class sorts and fits them
+    into an image.
+
+        pack.data().save(file)
+        pack.data().data => bytes
+        pack.image().save(file)
+        pack.image() => PIL Image (RGBA)
+        pack.image().split() => a 4-tuple of greyscale PIL Images
+                                for the channels Red, Green, Blue, Alpha
+    """
+
     @property
     def size(self):
         return self._size
@@ -117,7 +128,7 @@ class pack:
         self._glyphs = _glyphs # we stomp on each glyph
         self._size   = 0
 
-        # sort by height for packing
+        # sort by height for packing - good heuristic
         _glyphs.sort(key=lambda glyph: glyph.height, reverse=True)
 
         for size in sizes:

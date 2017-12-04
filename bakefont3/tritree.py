@@ -1,5 +1,5 @@
 class bbox:
-    # A bounding box / bounding cube!
+    """A bounding box / bounding cube!"""
     __slots__ = ['x0', 'y0', 'x1', 'y1', 'z0', 'z1']
 
     # bounding box
@@ -33,10 +33,15 @@ class bbox:
 
 
 class tritree:
-    # trinary tree node where each node is a bounding box. If the node has no
-    # children, its bounding box represents empty space. Otherwise, its
-    # bounding box is split below and to the right and outwards by exactly
-    # three children, for which the same definition applies recursively.
+    """
+    Trinary tree node where each node also has a bounding box interface.
+
+    If the node has no children, its bounding box represents empty space.
+
+    Otherwise, its bounding box is split below and to the right and
+    outwards by exactly three children, for which the same definition applies
+    recursively.
+    """
 
     __slots__ = ['bbox', 'right', 'down', 'out']
 
@@ -90,6 +95,15 @@ class tritree:
         return self.z < 4
 
     def fit(self, item):
+        """
+        If empty: fit an item into this node, splitting it into three empty
+        child nodes.
+
+        If full: recursively try to fit it into its child nodes.
+
+        The `item` argument is anything with a width and a height. Depth is
+        assumed to be always 1.
+        """
         # Returns False or the bbox that the item can fit into
         # item is anything with a width and height property
 

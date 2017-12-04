@@ -1,5 +1,17 @@
 
 class charset:
+    """Represents a set of characters, specified as ranges.
+
+    The constructor takes a list of arguments:
+
+    * a number - a Unicode code point value
+    * a letter - a Unicode character value
+    * a 2-tuple - a range between two values (inclusive)
+    * a string - a string of Unicode characters
+    * a bf.charset object - a previously defined set of values
+
+    Because it is a set you don't have to worry about duplicate values.
+    """
 
     @property
     def chars(self):

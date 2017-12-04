@@ -4,6 +4,8 @@ import math
 
 
 class font:
+    """Bakefont3's representation of a freetype font"""
+
     @property
     def name(self):
         return self._name

@@ -89,6 +89,11 @@ def flatten(it):
 
 
 class encode:
+    """
+    Encodes font and character and glyph and kerning information into a
+    binary file. You will still need the separate texture atlas as well.
+    """
+
     def __init__(self, size, fonts, sizes, glyphs):
         def _magic():
             yield b'BAKEFONT3r0\0'; # 12 bytes
