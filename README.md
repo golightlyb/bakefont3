@@ -44,6 +44,7 @@ font_liberation_sans_bold         = bf.font("Sans Serif Bold", "/usr/share/fonts
 
 
 # a list of (font, size, character set) tuples to pack
+# optional sizes argument: e.g. sizes=[(256,256),(512,256),(512,512)]
 result = bf.pack([
     (font_liberation_sans_regular, 12, charset_windows_1252),
     (font_liberation_sans_bold,    12, charset_windows_1252),
@@ -53,11 +54,12 @@ result = bf.pack([
     (font_liberation_sans_bold,    16, charset_windows_1252),
 ])
 
-print("> The atlas fits into a square of size %dx%d (4 channel)" % (result.size, result.size))
+width, height = result.size
+print("> The atlas fits into a rectangle of size %dx%d (4 channel)" % (width, height))
 
 filename = "font-atlas"
-#result.saveImage(outfilename+".png") # the texture atlas
-#result.saveData(outfilename+".bf3")  # kerning, lookup, size data etc.
+result.image().save(outfilename+".png") # the texture atlas
+result.data().save(outfilename+".bf3")  # kerning, lookup, size data etc.
 ```
 
 
@@ -74,6 +76,10 @@ filename = "font-atlas"
     git clone https://github.com/python-pillow/Pillow.git
     cd Pillow
     sudo python3 ./setup.py install
+
+**numpy
+
+    sudo pip3 install numpy
 
 
 ## COPYING ##
