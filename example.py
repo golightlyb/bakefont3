@@ -113,13 +113,20 @@ for i, task in enumerate(tasks):
 
 
 # Let's bake! We combine and pack everything into one image
-# bg.pack(render results...) -> pack result
-print("Packing...")
-result = bf.pack(results)
+# bg.pack(render results..., [size_sequence]) -> pack result
 
-print("> The atlas fits into a square of size %dx%d (4 channel)" % (result.size, result.size))
+# size_sequence defaults to the sequence (64, 64), (128, 128), (256, 256)...
+# and defines what sizes are acceptable in order of preference
+# e.g. result = bf.pack(results, [(200, 200), (512, 128)])
+
+print("Packing...")
+result = bf.pack(results) # default 2^n square sizes
+
+width, height = result.size
+print("> The atlas fits into a rectangle of size %dx%d (4 channel)" % (width, height))
 
 print("Saving results...")
+
 img = result.image()
 img.save(outfilename+".png")
 channels = img.split()

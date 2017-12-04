@@ -4,7 +4,7 @@ import numpy as np
 
 
 class glyph:
-    __slots__ = ['code', 'x', 'y', 'z', 'width', 'height', 'image',
+    __slots__ = ['code', 'x', 'y', 'z', 'id64', 'width', 'height', 'image',
                  'xoffset', 'yoffset', 'advance']
 
     @property
@@ -50,6 +50,7 @@ class glyph:
         self.x = 0
         self.y = 0
         self.z = 0 # layer i.e. RGBA channel 0,1,2,3
+        self.id64 = 0
 
 
 class render:

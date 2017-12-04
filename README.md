@@ -15,6 +15,7 @@ TODO data export too
 * exports kerning and glyph metrics
 * efficient packing to reduce physical texture size
 * uses all four colour channels to share space with other RGBA textures
+* supports square and rectangle texture atlases of any size
 
 
 ## Example Usage ##
