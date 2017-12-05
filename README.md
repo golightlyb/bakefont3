@@ -12,10 +12,19 @@ TODO data export too
 
 * Unicode support
 * customisable character ranges
-* exports kerning and glyph metrics
+* exports font metrics and kerning data
 * efficient packing to reduce physical texture size
 * uses all four colour channels to share space with other RGBA textures
 * supports square and rectangle texture atlases of any size
+* supports subpixel font sizes
+
+
+## Useful notes ##
+
+**Font sizes are given in pixels.**
+Typographic dpi is always 72. At 72ppi, 1pt == 1px.
+Convert as necessary for different devices.
+
 
 
 ## Example Usage ##

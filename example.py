@@ -87,25 +87,21 @@ tasks = [
     (font_liberation_monospace_regular, 16, charset_simple),
     (font_liberation_monospace_regular, 18, charset_simple),
 
-    (font_liberation_sans_regular,      11.5, charset_custom), # fractional sizes you betcha
+    (font_liberation_sans_regular, 11, charset_custom),
+    (font_liberation_sans_regular, 11.5, charset_custom), # fractional sizes you betcha
+    (font_liberation_sans_regular, 12, charset_custom),
+    (font_liberation_sans_regular, 14, charset_custom),
+    (font_liberation_sans_regular, 16, charset_custom),
 
+    (font_liberation_sans_bold, 12, charset_custom),
+    (font_liberation_sans_bold, 14, charset_custom),
+    (font_liberation_sans_bold, 16, charset_custom),
+    (font_liberation_sans_bold, 18, charset_custom),
+    (font_liberation_sans_bold, 22, charset_custom),
 
     # as a test, note that overlapping sets don't waste any extra space
     # (font_liberation_sans_regular,      14, charset_ascii),
 ]
-
-"""
-    (font_liberation_sans_regular,      12, charset_custom),
-    (font_liberation_sans_regular,      14, charset_custom),
-    (font_liberation_sans_regular,      16, charset_custom),
-    (font_liberation_sans_regular,      18, charset_custom),
-
-    (font_liberation_sans_bold,         12, charset_custom),
-    (font_liberation_sans_bold,         14, charset_custom),
-    (font_liberation_sans_bold,         16, charset_custom),
-    (font_liberation_sans_bold,         18, charset_custom),
-    (font_liberation_sans_bold,         22, charset_custom),
-"""
 
 
 print("Rasterising glyphs for each (font, size, charset) task")

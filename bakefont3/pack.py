@@ -1,7 +1,16 @@
 import bakefont3 as bf
+import bakefont3.encode as bfencode
 import numpy as np
 from PIL import Image
 import copy
+
+class saveable:
+    def __init__(self, data):
+        self.data = data
+    def save(self, filename):
+        with open(filename, 'wb') as fp:
+            fp.write(self.data)
+
 
 
 def size_seq():
@@ -42,7 +51,7 @@ class pack:
             Image.new("L", (width, height), 0),
         ]
 
-        for g in self._glyphs:
+        for g in self._allGlyphs:
             if not g.image: continue
             channels[g.z].paste(g.image, (g.x, g.y, g.x + g.width, g.y + g.height))
 
@@ -62,81 +71,85 @@ class pack:
 
 
     def data(self):
-        # sort by id for indexing
         # returns a bytes object
-        self._glyphs.sort(key=lambda glyph: glyph.id64)
-        size = self._size
-        glyphs = self._glyphs
-        fonts = self._fonts
-        sizes = self._fontSizes # indexed by font - TODO sort
 
-        return bf.encode(size, fonts, sizes, glyphs)
+        # sort by id so that its binary-searchable
+        # self._glyphs.sort(key=lambda glyph: glyph.id64)
+
+        texsize = self._size
+
+        def header(fontsize):
+            yield b'BAKEFONTv3r0' # 12 bytes marker
+            yield bfencode.uint32(texsize[0])   # texture atlas width
+            yield bfencode.uint32(texsize[1])   # texture atlas height
+            yield bfencode.uint32(48)           # absolute offset to font structure
+            yield bfencode.uint32(fontsize)     # size of font structure in bytes
+            yield bfencode.uint32(0)            # absolute offset to glyph structure
+            yield bfencode.uint32(0)            # size of glyph structure in bytes
+            yield bfencode.uint32(0)            # absolute offset to the kerning structure
+            yield bfencode.uint32(0)            # size of the kerning structure in bytes
+            yield b'\0' * 8                     # 8 bytes reserved
+
+        def font_structure():
+            yield b'FONTDATA' # 8 bytes marker
+            yield bfencode.uint32(len(self._fonts))
+            for fontname, font in self._fonts.items():
+                print(fontname)
+                font.bytes()
+
+        font_structure = b''.join(font_structure())
+        header = b''.join(header(len(font_structure)))
+        return saveable(header)
 
 
     def __init__(self, renderResults, sizes=None):
+        # sizes: sequence of 2-tuples of possible texture atlas (width, height)
+        #        that should be tried. Defaults to a sequence [(2^n, 2^n), ...]
+        assert renderResults is not None
         if sizes is None: sizes = size_seq()
-        self._glyphs = []
-        self._fonts = [] # font names
-        self._fontSizes = {} # indexed to a list of sizes
-        if not renderResults: return
 
-        # ordered list of font names
-        _fonts = []
-        _seen = set()
-        _fontSizes = {}
-
+        # build an ordered list of (font-name, size) tuples
+        # and a dict of font-name -> font
+        fontSizePairs = set()
+        fonts = dict()
         for render in renderResults:
-            name = render.font.name
-            if not name in _seen:
-                _fonts.append(name)
-                _seen.add(name)
-                print(_fonts.index(name))
-                _fontSizes[_fonts.index(name)] = set()
+            fontSizePairs.add((render.font.name, render.size))
+            fonts[render.font.name] = render.font
 
-        _fonts.sort(key=str)
-
-        _glyphs = []
-        _seen = set()
+        fontSizePairs = sorted(list(fontSizePairs))
 
         # list of glyphs from every renderResult
         # -- ignore any duplicates of font+size+glyph
+        uniqueGlyphs = {} # fontId => packedGlpyh
+        allGlyphs = [] # sortable by height
+        seenFontIds = set()
         for render in renderResults:
-            fontId = _fonts.index(render.font.name)
-            _fontSizes[fontId].add(render.size)
-            size   = render.size
+            fontId = fontSizePairs.index((render.font.name, render.size))
 
             for glyph in render.glyphs:
+                key64 = glyph.code + (fontId << 32)
 
-                # we support fractional font sizes so we are weird with the size
-                key = glyph.code + (int(size * 64) << 32) + (fontId << 48)
+                if not key64 in seenFontIds:
+                    packedGlyph = bf.packedGlyph(glyph)
+                    uniqueGlyphs[fontId] =  packedGlyph
+                    allGlyphs.append(packedGlyph)
+                    seenFontIds.add(key64)
 
-                if not key in _seen:
-                    # we stomp on the glyph datastructure so need a copy
-                    # to avoid corrupting them if method calls are
-                    # interleaved weirdly
-                    newglyph = copy.copy(glyph)
-                    if (glyph.image):
-                        newglyph.image = glyph.image.copy()
-
-                    glyph = newglyph
-                    glyph.id64 = key # stash it
-                    _glyphs.append(glyph)
-                    _seen.add(key)
-
-        self._fonts  = _fonts
-        self._fontSizes = _fontSizes
-        self._glyphs = _glyphs # we stomp on each glyph
+        self._fonts = fonts
+        self._fontSizesPairs = fontSizePairs
+        self._glyphs = uniqueGlyphs
+        self._allGlyphs = allGlyphs
         self._size   = 0
 
         # sort by height for packing - good heuristic
-        _glyphs.sort(key=lambda glyph: glyph.height, reverse=True)
+        allGlyphs.sort(key=lambda glyph: glyph.height, reverse=True)
 
         for size in sizes:
             width, height = size
 
-            if pack.couldMaybeFit(size, _glyphs):
+            if pack.couldMaybeFit(size, allGlyphs):
                 print("    fitting: trying size %dx%d" % (width, height))
-                if pack.fit(size, _glyphs):
+                if pack.fit(size, allGlyphs):
                     self._size = size
                     return
             else:

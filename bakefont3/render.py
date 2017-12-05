@@ -4,7 +4,7 @@ import numpy as np
 
 
 class glyph:
-    __slots__ = ['code', 'x', 'y', 'z', 'id64', 'width', 'height', 'image',
+    __slots__ = ['code', 'width', 'height', 'image',
                  'xoffset', 'yoffset', 'advance']
 
     @property
@@ -42,15 +42,27 @@ class glyph:
         self.width = width
         self.height = height
         self.image = dest
+
+        # kerning information, see:
+        # https: // www.freetype.org / freetype2 / docs / tutorial / step2.html
         self.xoffset = glyph.bitmap_left
         self.yoffset = glyph.bitmap_top
-        self.advance = bf.decode_fp26(glyph.advance.x)
+        self.advance = glyph.advance.x # in fp26.6
 
-        # placeholder values that get stomped on exclusively by bf.pack(...)
-        self.x = 0
-        self.y = 0
-        self.z = 0 # layer i.e. RGBA channel 0,1,2,3
-        self.id64 = 0
+
+class packedGlyph:
+    __slots__ = ['glyph', 'x', 'y', 'z']
+
+    def __getattr__(self, attr):
+        return getattr(self.glyph, attr)
+
+    def __init__(self, glyph):
+        self.glyph = glyph
+        self.x     = 0 # x pixel in texture atlas
+        self.y     = 0 # y pixel in texture atlas
+        self.z     = 0 # layer i.e. RGBA channel 0,1,2,3
+
+
 
 
 class render:
@@ -64,19 +76,20 @@ class render:
 
     @property
     def size(self):
-        return self._size
-
+        return self._size # fp26.6
 
     def __init__(self, font, size, charset):
+        # size is a float e.g. "11.5"
+        size = float(size)
         assert isinstance(font, bf.font)
         assert isinstance(charset, bf.charset)
-        assert 1.0 < size < 256.0 # arbitrary sensible limit
+        assert 1.0 < size < 255.0
 
         self._font = font
-        self._size = size
         self._glyphs = []
+        self._size = int (size * 64.0) # fp26.6
 
-        font.setSize(size)
+        font.setSize(self._size)
 
         for i in charset.chars:
             self._glyphs.append(glyph(font, i))
