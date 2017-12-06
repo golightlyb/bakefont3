@@ -1,5 +1,7 @@
 import freetype
-import math # ceil, floor
+import math # ceil
+import bakefont3.encode as bfencode
+import bakefont3.decode as bfdecode
 
 
 class font:
@@ -13,30 +15,92 @@ class font:
     def face(self):
         return self._face
 
-    def bytes(self):
+    def encode(self, index, size):
         """encodes to a byte structure"""
-        # https://www.freetype.org/freetype2/docs/tutorial/step2.html
-        # face.ascender # fixed point 26.6 encoding
-        #face.descender # fixed point 26.6 encoding
-        face = self.face
-        print ('units per em:        {}'.format(face.units_per_EM))
-        print ('ascender:            {}'.format(face.ascender))
-        print ('descender:           {}'.format(face.descender))
-        print ('height:              {}'.format(face.height))
-        print ('bbox:                {}'.format([face.bbox.xMin, face.bbox.yMin, face.bbox.xMax, face.bbox.yMax]))
-        print ('')
-        print ('max_advance_width:   {}'.format(face.max_advance_width))
-        print ('max_advance_height:  {}'.format(face.max_advance_height))
-        print ('')
-        print ('underline_position:  {}'.format(face.underline_position))
-        print ('underline_thickness: {}'.format(face.underline_thickness))
-        print ('')
-        print ('Has horizontal:      {}'.format(face.has_horizontal))
-        print ('Has vertical:        {}'.format(face.has_vertical))
-        print ('Has kerning:         {}'.format(face.has_kerning))
-        print ('Is fixed width:      {}'.format(face.is_fixed_width))
-        print ('Is scalable:         {}'.format(face.is_scalable))
 
+        face = self.face
+        fsize = bfdecode.unfp26_6(size) # size as float
+        assert face.is_scalable
+
+        def relative(value):
+            # value is in relative Font Units, so converted into pixels for the
+            # given font rasterisation size
+            return (float(value) * fsize) / float(face.units_per_EM)
+
+
+        # https://www.freetype.org/freetype2/docs/tutorial/step1.html
+        # https://www.freetype.org/freetype2/docs/tutorial/step2.html
+        # https://www.microsoft.com/typography/otspec/TTCH01.htm
+
+        # the generic name given by the user of bakefont3, e.g. "Title Font"
+        yield bfencode.b8string(self.name)
+
+        # the actual font family the font was based on e.g. "Liberation Mono"
+        # NOTE - encoding unknown, don't trust the value
+        yield bfencode.uint8(len(face.family_name))
+        yield face.family_name
+        yield b'\0'
+
+        # (Font, Size) pair Index
+        yield bfencode.uint32(index) # 0, 1, 2, ... n-1
+
+        # flags (8 bytes) - ignore any null bytes, accept any order
+        yield b'M' if face.is_fixed_width else b'm' # monospace
+        yield b'K' if face.has_kerning    else b'k'
+        yield b'H' if face.has_horizontal else b'h' # e.g. most Latin languages
+        yield b'V' if face.has_vertical   else b'v' # e.g. some East Asian
+        yield b'A' # antialiasing
+        yield b'\0\0\0' # 3 placeholders
+
+        # Font Units per EM.
+        # normally always 2048 for TrueType, but can be a weird value such as 1
+        # e.g. a square of 2048x2048, if the EM square is always the exact
+        # same height as the font size. Hence, the size of each square
+        # stretches with size.
+        # You won't need this for a rasterised font!
+        # yield bfencode.uint16(face.units_per_EM)
+
+        # face.ascender
+        # face.descender
+        # https://www.microsoft.com/typography/otspec/os2.htm#sta
+        # Don't use these - they are unreliable and you want the values per
+        # glyph instead.
+
+        # face.height - fixed point 26.6 (divide by 64 to get a float)
+        # is an appropriate default line spacing
+        # (no guarantee that no glyphs extend above or below baselines)
+        yield bfencode.fp26_6(relative(face.height)) # in pixels
+
+        # face.bbox
+        # this is the size of a bounding box able to hold any glyph
+        # NOTE - this is just a hint! After rendering, individual glyphs may
+        # not match this!
+        # face.bbox.xMin/yMin/xMax/yMax - in relative Font Units
+
+        # TODO calculate this ourselves from our rasterised glyphs!
+        yield bfencode.int16(0) # xMin placeholder
+        yield bfencode.int16(0) # yMin placeholder
+        yield bfencode.int16(0) # xMax placeholder
+        yield bfencode.int16(0) # yMax placeholder
+
+        # max_advance_width
+        # maximum horizontal cursor advance
+        # can be used to quickly compute the maximum advance width of a string
+        # of text. Doesn't correspond to the maximum glyph image width!
+
+        # TODO calculate this ourselves from our rasterised glyphs!
+        # TODO height as well (for vertical fonts)
+        yield bfencode.int16(0) # advance width placeholder
+        yield bfencode.int16(0) # advance height placeholder
+
+        # face.underline_position
+        # vertical position, relative to the baseline, of the underline bar's
+        # center. Negative if it is below the baseline.
+        yield bfencode.fp26_6(relative(face.underline_position))
+
+        # face.underline_thickness
+        # vertical thickness of the underline (remember its centered)
+        yield bfencode.fp26_6(relative(face.underline_thickness))
 
 
     @property

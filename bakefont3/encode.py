@@ -16,7 +16,7 @@ def fp26_6(native_num):
     else:
         result = int(float(native_num) * 64.0)
 
-    return uint32(result)
+    return int32(result)
 
 
 def int8(num):
@@ -50,13 +50,13 @@ def uint64(num):
 def cstring(nativeString, encoding="utf-8"):
     """null-terminated C-style string"""
     bytes = nativeString.encode(encoding);
-    return bytes + '\0';
+    return bytes + b'\0';
 
 def b8string(nativeString, encoding="utf-8"):
     """uint8 length-prefixed Pascal-style string
     plus a C-style null terminator
-    aka a bastard string"""
+    aka a 'bastard string'."""
     bytes = nativeString.encode(encoding);
     length = len(bytes)
     assert length < 256
-    return uint8(length) + bytes + '\0';
+    return uint8(length) + bytes + b'\0';

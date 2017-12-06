@@ -79,29 +79,34 @@ font_liberation_sans_bold         = bf.font("Sans Serif Bold", "/usr/share/fonts
 font_liberation_monospace_regular = bf.font("Monospace",       "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf")
 font_liberation_monospace_bold    = bf.font("Monospace Bold",  "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf")
 
+# FIXME bad things happen if you give two different fonts the same name
+
 
 tasks = [
     (font_liberation_monospace_bold,    14, bf.charset("FPS: 0123456789")),
-    (font_liberation_monospace_regular, 12, charset_simple),
-    (font_liberation_monospace_regular, 14, charset_simple),
-    (font_liberation_monospace_regular, 16, charset_simple),
-    (font_liberation_monospace_regular, 18, charset_simple),
-
-    (font_liberation_sans_regular, 11, charset_custom),
-    (font_liberation_sans_regular, 11.5, charset_custom), # fractional sizes you betcha
-    (font_liberation_sans_regular, 12, charset_custom),
-    (font_liberation_sans_regular, 14, charset_custom),
-    (font_liberation_sans_regular, 16, charset_custom),
-
-    (font_liberation_sans_bold, 12, charset_custom),
-    (font_liberation_sans_bold, 14, charset_custom),
-    (font_liberation_sans_bold, 16, charset_custom),
-    (font_liberation_sans_bold, 18, charset_custom),
-    (font_liberation_sans_bold, 22, charset_custom),
+    (font_liberation_sans_regular,      14, charset_simple),
 
     # as a test, note that overlapping sets don't waste any extra space
     # (font_liberation_sans_regular,      14, charset_ascii),
 ]
+
+"""
+(font_liberation_monospace_regular, 14, charset_simple),
+(font_liberation_monospace_regular, 16, charset_simple),
+(font_liberation_monospace_regular, 18, charset_simple),
+
+(font_liberation_sans_regular, 11, charset_custom),
+(font_liberation_sans_regular, 11.5, charset_custom), # fractional sizes you betcha
+(font_liberation_sans_regular, 12, charset_custom),
+(font_liberation_sans_regular, 14, charset_custom),
+(font_liberation_sans_regular, 16, charset_custom),
+
+(font_liberation_sans_bold, 12, charset_custom),
+(font_liberation_sans_bold, 14, charset_custom),
+(font_liberation_sans_bold, 16, charset_custom),
+(font_liberation_sans_bold, 18, charset_custom),
+(font_liberation_sans_bold, 22, charset_custom),
+"""
 
 
 print("Rasterising glyphs for each (font, size, charset) task")

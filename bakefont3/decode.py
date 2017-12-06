@@ -3,6 +3,9 @@
 ENDIAN = '<' # always little endian
 
 
+def unfp26_6(num):
+    return (float(num) / 64.0)
+
 def fp26_6(num):
     """
     Decode a number from 26.6 fixed point arithmatic with the lower 6 bytes

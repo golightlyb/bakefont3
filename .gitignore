@@ -4,3 +4,4 @@ __pycache__
 *.komodo*
 *outfile*
 /*.png
+/*.bf3

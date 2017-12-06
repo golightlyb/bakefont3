@@ -3,6 +3,8 @@ import bakefont3.encode as bfencode
 import numpy as np
 from PIL import Image
 import copy
+import math
+
 
 class saveable:
     def __init__(self, data):
@@ -78,28 +80,57 @@ class pack:
 
         texsize = self._size
 
-        def header(fontsize):
-            yield b'BAKEFONTv3r0' # 12 bytes marker
-            yield bfencode.uint32(texsize[0])   # texture atlas width
-            yield bfencode.uint32(texsize[1])   # texture atlas height
-            yield bfencode.uint32(48)           # absolute offset to font structure
-            yield bfencode.uint32(fontsize)     # size of font structure in bytes
-            yield bfencode.uint32(0)            # absolute offset to glyph structure
-            yield bfencode.uint32(0)            # size of glyph structure in bytes
-            yield bfencode.uint32(0)            # absolute offset to the kerning structure
-            yield bfencode.uint32(0)            # size of the kerning structure in bytes
-            yield b'\0' * 8                     # 8 bytes reserved
+        def header(fontsize, gsecsize):
+            yield b'BAKEFONTv3r0'               # 12 bytes marker
+            yield bfencode.uint16(texsize[0])   # texture atlas width
+            yield bfencode.uint16(texsize[1])   # texture atlas height
+            yield bfencode.uint32(48)           # absolute offset to font table
+            yield bfencode.uint32(fontsize)     # size of font table in bytes
+            yield bfencode.uint32(48+fontsize)  # absolute offset to glyph section
+            yield bfencode.uint32(gsecsize)     # size of glyph section in bytes
+            yield bfencode.uint32(48+fontsize+gsecsize) # absolute offset to kerning section
+            yield bfencode.uint32(0)            # size of kerning section in bytes
+            yield b'\0' * 12                    # 12 bytes reserved
 
-        def font_structure():
+        def font_table():
             yield b'FONTDATA' # 8 bytes marker
             yield bfencode.uint32(len(self._fonts))
-            for fontname, font in self._fonts.items():
-                print(fontname)
-                font.bytes()
+            for fontId, (fontname, size) in enumerate(self._fontSizePairs):
+                font = self._fonts[fontname]
+                record = b''.join(font.encode(fontId, size))
+                yield bfencode.uint32(len(record)) # size of font record in bytes
+                yield record
 
-        font_structure = b''.join(font_structure())
-        header = b''.join(header(len(font_structure)))
-        return saveable(header)
+        def glyph_section():
+
+            yield b'GSETDATA'                       # 8 bytes marker
+
+            # size in bytes of a glyph structure -   4 bytes
+            yield bfencode.uint32(bf.packedGlyph.structSize)
+
+            # number of glyph sets (always one for each font,size pair)
+            assert len(self._fontSizePairs) == len(self._fonts)
+
+            for fontId, (fontname, size) in enumerate(self._fontSizePairs):
+                font = self._fonts[fontname]
+                yield b'GSET'                       # 4 bytes marker
+                yield bfencode.uint32(fontId)       # 4 bytes FontId
+                glyphs = self._glyphs[fontId]
+                yield bfencode.uint32(len(glyphs)) # number of glyphs
+
+                # sort by ID for binary searcing
+                glyphs.sort(key=lambda g: g.code)
+
+                for glyph in glyphs:
+                    yield from glyph.encode(font, size)
+
+
+        font_table = b''.join(font_table())
+        glyph_section = b''.join(glyph_section())
+
+        header = b''.join(header(len(font_table), len(glyph_section)))
+
+        return saveable(header + font_table + glyph_section)
 
 
     def __init__(self, renderResults, sizes=None):
@@ -130,13 +161,16 @@ class pack:
                 key64 = glyph.code + (fontId << 32)
 
                 if not key64 in seenFontIds:
+                    if not fontId in uniqueGlyphs:
+                        uniqueGlyphs[fontId] = []
+
                     packedGlyph = bf.packedGlyph(glyph)
-                    uniqueGlyphs[fontId] =  packedGlyph
+                    uniqueGlyphs[fontId].append(packedGlyph)
                     allGlyphs.append(packedGlyph)
                     seenFontIds.add(key64)
 
         self._fonts = fonts
-        self._fontSizesPairs = fontSizePairs
+        self._fontSizePairs = fontSizePairs
         self._glyphs = uniqueGlyphs
         self._allGlyphs = allGlyphs
         self._size   = 0
@@ -197,7 +231,7 @@ class pack:
             # status
             count += 1
             pc = int(100.0 * (count / num))
-            if (pc - last_pc >= 5):
+            if pc - last_pc >= 8:
                 last_pc = pc
                 print("    fitting: %d%%" % pc)
 
