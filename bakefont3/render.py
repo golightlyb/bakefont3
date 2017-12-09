@@ -48,29 +48,38 @@ class glyph:
         assert isinstance(code, int)
 
         self.code = code # unicode value
+        has_glyph = True
 
-        font.face.load_char(self.char)
-        glyph = font.face.glyph
-        bitmap = glyph.bitmap
-        width = bitmap.width
-        height = bitmap.rows
-        src = bitmap.buffer
-        dest = None
+        if font.face.get_char_index(code):
+            font.face.load_char(self.char)
+            glyph = font.face.glyph
+            bitmap = glyph.bitmap
+            width = bitmap.width
+            height = bitmap.rows
+            src = bitmap.buffer
+            dest = None
 
-        # encode as PIL image
-        if (width > 0) and (height > 0):
-            arr = np.zeros(shape=(height,width), dtype=np.uint8)
-            for y in range(height):
-                for x in range(width):
-                    c = src[x + (y * bitmap.pitch)]
-                    arr[y,x] = c
+            # encode as PIL image
+            if (width > 0) and (height > 0):
+                arr = np.zeros(shape=(height, width), dtype=np.uint8)
+                for y in range(height):
+                    for x in range(width):
+                        c = src[x + (y * bitmap.pitch)]
+                        arr[y, x] = c
 
-            dest = Image.fromarray(arr, mode="L")
+                dest = Image.fromarray(arr, mode="L")
 
-        self.width = width
-        self.height = height
-        self.image = dest
-        self.handle = font.face.glyph
+            self.width = width
+            self.height = height
+            self.image = dest
+            self.handle = font.face.glyph
+
+        else:
+            print("    notice: no glyph in font at Unicode code point 0x%x (%s)" % (code, repr(chr(code))))
+            self.width = 0
+            self.height = 0
+            self.image = None
+            self.handle = None
 
 
 class packedGlyph:
@@ -107,16 +116,19 @@ class packedGlyph:
         yield bfencode.uint8(self.height)   # 1 byte
         yield b'\0'                         # 1 byte padding
 
-        # horizontal left side bearing and top side bearing
-        # positioning information relative to baseline
-        yield bfencode.fp26_6(self.handle.metrics.horiBearingX) # 4 bytes
-        yield bfencode.fp26_6(self.handle.metrics.horiBearingY) # 4 bytes
-        # advance - how much to advance the pen by horizontally after drawing
-        yield bfencode.fp26_6(self.handle.metrics.horiAdvance)  # 4 bytes
+        if self.handle:
+            # horizontal left side bearing and top side bearing
+            # positioning information relative to baseline
+            yield bfencode.fp26_6(self.handle.metrics.horiBearingX) # 4 bytes
+            yield bfencode.fp26_6(self.handle.metrics.horiBearingY) # 4 bytes
+            # advance - how much to advance the pen by horizontally after drawing
+            yield bfencode.fp26_6(self.handle.metrics.horiAdvance)  # 4 bytes
 
-        yield bfencode.fp26_6(self.handle.metrics.vertBearingX)  # 4 bytes
-        yield bfencode.fp26_6(self.handle.metrics.vertBearingY)  # 4 bytes
-        yield bfencode.fp26_6(self.handle.metrics.vertAdvance)   # 4 bytes
+            yield bfencode.fp26_6(self.handle.metrics.vertBearingX)  # 4 bytes
+            yield bfencode.fp26_6(self.handle.metrics.vertBearingY)  # 4 bytes
+            yield bfencode.fp26_6(self.handle.metrics.vertAdvance)   # 4 bytes
+        else:
+            yield b'\0\0\0\0' * 6
 
 
 

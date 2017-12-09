@@ -3,6 +3,8 @@
 
 import bakefont3 as bf
 import sys
+import os.path
+home = os.path.expanduser("~")
 
 if len(sys.argv) == 2:
     outfilename = sys.argv[1]
@@ -11,40 +13,110 @@ else:
     sys.exit(1)
 
 
-# define sets of characters we may want to render
-# bf.charset(name, ...) takes a list of values:
-#     * a number - a Unicode value
+# Step One
+# Define the set of characters we want fonts to be able to use.
+
+# bf.charset(name, ...) takes a list of values.
+# The result bf.charset represents a set of all the given values.
+
+# Each value in the list of arguments is interpreted as follows:
+#     * a number - a Unicode codepoint/value
 #     * a letter - a Unicode character
 #     * a 2-tuple - a range between two values (inclusive)
 #     * a string - a string of Unicode characters
 #     * a bf.charset object - a previously defined set of values
-# The result is a set of the union of all the given values
 
 print("Loading character sets")
-charset_simple           = bf.charset(('A', 'Z'), ('0','9'), ".,:!?\"()")
-charset_ascii            = bf.charset((32, 126))
-charset_latin_1          = bf.charset(charset_ascii, (161, 255))
-charset_windows_1252     = bf.charset(charset_latin_1, "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ")
-charset_welsh            = bf.charset(charset_latin_1, "ẀẁẂẃŴŵŶŷ", 7930, 7931)
+charset_simple = bf.charset(('A', 'Z'), ('0','9'), ".,:!?\"()")
+charset_ascii  = bf.charset((32, 126))
 
-charset_arrows           = bf.charset((0x2190, 0x21FF))
-charset_emoticons        = bf.charset((0x1F600, 0x1F64F))
-charset_geometric_shapes = bf.charset((0x25A0, 0x25FF))
-charset_mathematical_operators = bf.charset((0x2200, 0x22FF))
+charset_latin_1 = bf.charset(charset_ascii, (161, 255))
 
-charset_latin_extended_a = bf.charset((0x0100, 0x017F))
-charset_latin_extended_b = bf.charset((0x0180, 0x024F))
-charset_latin_extended_c = bf.charset((0x2C60, 0x2C7F))
-charset_latin_extended_additional = bf.charset((0x1E00, 0x1EFF))
+charset_latin_2 = bf.charset(charset_ascii,
+    "Ą˘Ł¤ĽŚ§¨ŠŞŤŹŽŻ°ą˛ł´ľśˇ¸šşťź˝žżŔÁÂĂÄĹĆÇČÉĘËĚÍÎĎĐŃŇÓÔŐÖ×ŘŮÚŰÜÝŢßŕáâăäĺćçčé",
+    "ęëěíîďđńňóôőö÷řůúűüýţ˙")
 
-charset_greek_and_coptic = bf.charset(
+charset_latin_3 = bf.charset(charset_ascii,
+    "Ħ˘£¤Ĥ§¨İŞĞĴŻ°ħ²³´µĥ·¸ışğĵ½żÀÁÂÄĊĈÇÈÉÊËÌÍÎÏÑÒÓÔĠÖ×ĜÙÚÛÜŬŜßàáâäċĉçèéêëìíîï",
+    "ñòóôġö÷ĝùúûüŭŝ˙")
+
+charset_latin_4 = bf.charset(charset_ascii,
+    "ĄĸŖ¤ĨĻ§¨ŠĒĢŦŽ¯°ą˛ŗ´ĩļˇ¸šēģŧŊžŋĀÁÂÃÄÅÆĮČÉĘËĖÍÎĪĐŅŌĶÔÕÖ×ØŲÚÛÜŨŪßāáâãäåæįčé",
+    "ęëėíîīđņōķôõö÷øųúûüũū˙")
+
+charset_latin_cryillic = bf.charset(charset_ascii,
+    "ЁЂЃЄЅІЇЈЉЊЋЌЎЏАБВГДЕЖИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъ",
+    "ыьэюя№ёђѓєѕіїјљњћќ§ўџ") # ISO 8859-5
+
+charset_latin_greek = bf.charset(charset_ascii,
+    "‘’£€₯¦§¨©ͺ«¬―°±²³΄΅Ά·ΈΉΊ»Ό½ΎΏΐΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩΪΫάέήίΰαβγδεζηθικλ",
+    "μνξοπρςστυφχψωϊϋόύώ") # ISO 8859-7
+
+charset_latin_6 = bf.charset(charset_ascii,
+    "ĄĒĢĪĨĶ§ĻĐŠŦŽŪŊ°ąēģīĩķ·ļđšŧž―ūŋĀÁÂÃÄÅÆĮČÉĘËĖÍÎÏÐŅŌÓÔÕÖŨØŲÚÛÜÝÞßāáâãäåæįčé",
+    "ęëėíîïðņōóôõöũøųúûüýþĸ") # ISO 8859-10
+
+charset_latin_7 = bf.charset(charset_ascii,
+    "”¢£¤„¦§Ø©Ŗ«¬®Æ°±²³“µ¶·ø¹ŗ»¼½¾æĄĮĀĆÄÅĘĒČÉŹĖĢĶĪĻŠŃŅÓŌÕÖ×ŲŁŚŪÜŻŽßąįāćäåęēč",
+    "éźėģķīļšńņóōõö÷ųłśūüżž’")
+
+charset_latin_hebrew = bf.charset(charset_ascii,
+    (0x00A2, 0x00AF), (0x00B0, 0x00BE), 0x2017, (0x05D0, 0x05EA)) # ISO 8859-8
+
+charset_latin_8 = bf.charset(charset_ascii,
+    "Ḃḃ£ĊċḊ§Ẁ©ẂḋỲ®ŸḞḟĠġṀṁ¶ṖẁṗẃṠỳẄẅṡÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏŴÑÒÓÔÕÖṪØÙÚÛÜÝŶßàáâãäåæçè",
+    "éêëìíîïŵñòóôõöṫøùúûüýŷÿ") # Celtic / ISO 8859-14
+
+charset_latin_10 = bf.charset(charset_ascii,
+    "ĄąŁ€„Š§š©Ș«ŹSHYźŻ°±ČłŽ”¶·žčș»ŒœŸżÀÁÂĂÄĆÆÇÈÉÊËÌÍÎÏĐŃÒÓÔŐÖŚŰÙÚÛÜĘȚßàáâăäćæ",
+    "çèéêëìíîïđńòóôőöśűùúûüęțÿ") # ISO 8859-16
+
+charset_page_437 = bf.charset(charset_ascii,
+    "☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿",
+    "⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φ",
+    "ε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■") # ♥ dwarf fortress ♥
+
+charset_windows_1252 = bf.charset(charset_latin_1, "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ")
+
+# extra characters (depends on font support)
+
+# e.g. Esperanto, Hungarian, Czech, ...
+block_latin_extended_a = bf.charset((0x0100, 0x017F))
+
+# some that may not be supported by most fonts...
+block_arrows                 = bf.charset((0x2190, 0x21FF))
+block_emoticons              = bf.charset((0x1F600, 0x1F64F))
+block_geometric_shapes       = bf.charset((0x25A0, 0x25FF))
+block_mathematical_operators = bf.charset((0x2200, 0x22FF))
+block_letterlike_symbols     = bf.charset((0x2100, 0x214F))
+block_greek_and_coptic       = bf.charset(
     (0x0370, 0x0377), (0x037A, 0x037F), (0x0384, 0x038A), 0x038C,
     (0x038E, 0x03A1), (0x03A3, 0x03FF))
 
-# https://en.wikipedia.org/wiki/ISO/IEC_8859-1#Languages_with_incomplete_coverage
 charset_custom = bf.charset(
-    charset_windows_1252,
+    charset_windows_1252, # superset of charset_latin_1
+    charset_latin_2,
+    charset_latin_3,
+    charset_latin_4,
+    charset_latin_cryillic,
+    charset_latin_greek,
+    charset_latin_6,
+    charset_latin_7,
+    charset_latin_8,
+    # charset_latin_hebrew, # needs font support
+    charset_latin_10,
+    block_latin_extended_a,
 
+    "ẀẁẂẃŴŵŶŷ",  # Welsh
+    "©®™",
+    "¶§",
+    "¿¡•·ªº“”…",
+    "✔✖",
+    "°√ⁿ±≥≤∞",
+    "ΑαΒβΓγΔδΕεΖζΗηΘθΙιΚκΛλΜμΝνΞξΟοΠπΡρΣσςΤτΥυΦφΧχΨψΩω", # Greek alphabet
+    (0x0400,0x04FF), # Crylic
+
+    # https://en.wikipedia.org/wiki/ISO/IEC_8859-1#Languages_with_incomplete_coverage
     "Ŀŀ",                   # Catalan
     "ČčĎďĚěŇňŘřŠšŤťŮůŽž",   # Czech
     'Ĳ', 'ĳ',               # Dutch ligatures
@@ -53,14 +125,14 @@ charset_custom = bf.charset(
     "ŒœŸ",                  # French
     "ẼẽĨĩŨũỸỹGg̃",           # Guarani
     "ŐőŰű",                 # Hungarian
-    "ḂḃĊċḊḋḞḟĠġṀṁṠṡṪṫ",     # Irish (traditional orthography)
+    #"ḂḃĊċḊḋḞḟĠġṀṁṠṡṪṫ",     # Irish (traditional orthography) (missing from most fonts)
     "ĀāĒēĪīŌōŪū",           # Latin with macrons
     "ĀāĒēĪīŌōŪū",           # Māori
     "ĂăȘșȚțŢţ",             # Romanian
     "İıĞğŞş",               # Turkish
-    "ẀẁẂẃŴŵŶŷ",             # Welsh
-    7930, 7931,             # Welsh Ll/ll ligatures
-    '€',                    # Euro
+    "ĞİŞğışÐÝÞðýþ",         # Turkish Latin-5 extras
+    #7930, 7931,            # Welsh Ll/ll ligatures (missing from most fonts)
+    "Ґґ",                   # Ukrainian CP1124
 )
 
 # e.g.
@@ -74,17 +146,21 @@ charset_custom = bf.charset(
 #     * file - path to a TrueType font
 
 print("Loading fonts")
-font_liberation_sans_regular      = bf.font("Sans Serif",      "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf")
-font_liberation_sans_bold         = bf.font("Sans Serif Bold", "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf")
-font_liberation_monospace_regular = bf.font("Monospace",       "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf")
-font_liberation_monospace_bold    = bf.font("Monospace Bold",  "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf")
+try:
+    font_monospace = bf.font("Monospace",   home+"/.fonts/RobotoMono-Regular.ttf")
+    font_sans      = bf.font("Sans Serif",  home+"/.fonts/Roboto-Regular.ttf")
+except Exception:
+    print("You can download these fonts for free from Google Fonts")
+    raise
+
+
 
 # FIXME bad things happen if you give two different fonts the same name
 
 
 tasks = [
-    (font_liberation_monospace_bold,    14, bf.charset("FPS: 0123456789")),
-    (font_liberation_sans_regular,      14, charset_simple),
+    (font_monospace,    16, bf.charset("FPS: 0123456789")),
+    (font_sans,         16, charset_custom),
 
     # as a test, note that overlapping sets don't waste any extra space
     # (font_liberation_sans_regular,      14, charset_ascii),
@@ -150,11 +226,4 @@ b.save(outfilename+"-b.png")
 a.save(outfilename+"-a.png")
 
 
-
-# workaround to suppress deconstructor warnings in freetype-py
-# https://github.com/rougier/freetype-py/issues/44
-del font_liberation_sans_regular._face
-del font_liberation_sans_bold._face
-del font_liberation_monospace_regular._face
-del font_liberation_monospace_bold._face
 

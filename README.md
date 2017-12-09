@@ -37,10 +37,10 @@ and a bakefont3 data file.
 
 ### example-write.c
 
-**TODO**
+**TODO TODO TODO**
 
 This program demonstrates loading and parsing a bakefont data file in C, then
-using it to write some text to a PNG.
+using it to write some text and display it on screen using GLFW3.
 
     # Select a "Sans Serif" size 14 font generated earlier,
     # read text from stdin,
@@ -54,6 +54,7 @@ using it to write some text to a PNG.
 
 ### For generating fonts using bakefont3:
 
+    * Roboto and Roboto Mono fonts from [fonts.google.com](https://fonts.google.com/)
     * Python3
     * libfreetype
     * Python3 modules Pillow, numpy, freetype-py
@@ -66,6 +67,7 @@ Example:
 ### For the C example program:
 
     * libpng
+    * libglfw3
     * a C compiler (e.g. gcc, clang)
 
 Example:
