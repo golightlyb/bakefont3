@@ -17,7 +17,7 @@ atlas.
 
 * Unicode support
 * customisable character ranges
-* exports font metrics and kerning data
+* exports font metrics and kerning data as binary optimised for quick lookup
 * efficient packing to reduce physical texture size
 * can use all four colour channels to share space with other textures (can
     export RGB, RGBA, greyscale)
