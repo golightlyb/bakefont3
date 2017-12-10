@@ -60,3 +60,61 @@ def b8string(nativeString, encoding="utf-8"):
     length = len(bytes)
     assert length < 256
     return uint8(length) + bytes + b'\0';
+
+def fixedstring(nativeString, bufsize, encoding="utf-8"):
+    spare = bufsize - len(nativeString)
+    assert spare >= 1
+    bytes = nativeString.encode(encoding)
+    return bytes + (b'\0' * spare)
+
+
+def header(result):
+    width, height, depth = result.size
+
+    # Notation: `offset | size | notes`
+
+    # HEADER - 16 byte block
+    yield b"BAKEFONT30"   #  0 | 10 | magic bytes, version 3.0
+    yield uint16(width)   # 10 |  2 | texture atlas width
+    yield uint16(height)  # 12 |  2 | texture atlas height
+    yield uint16(depth)   # 14 |  2 | texture atlas depth (1, 3, 4)
+
+
+def fonts(result):
+    # Notation: `offset | size | notes`
+
+    # FONT TABLE HEADER - 8 bytes
+    yield b"FONT"                   # 16 | 4 | debugging marker
+    yield uint16(len(result.fonts)) # 18 | 2 | number of fonts
+    yield b"\0\0"                   # 20 | 2 | padding (realign to 8 bytes)
+
+    # FONT RECORDS - 48 bytes * number of fonts
+    # (for n = 0; n => n + 1; each record is at offset 20 + 48n)
+    # the FontID is implicit by the order e.g. the first font has FontID 0
+    for font in result.fonts:
+        name, _ = font
+        yield fixedstring(name, 48) # 20+48n | 48 | name for font ID n
+
+
+def modes(result):
+    # Notation: `offset | size | notes`
+    # offset is relative to 20 + (48 * number of fonts)
+
+    # FONT MODE TABLE HEADER - 8 bytes
+    yield b"MODE"                   # 6  | 4 | debugging marker
+    yield uint16(len(result.modes)) # 18 | 2 | number of modes
+    yield b"\0\0"                   # 20 | 2 | padding (realign to 8 bytes)
+
+    # FONT MODE RECORDS
+    # the ModeID is implicit by the order e.g. the first mode has ModeID 0
+    for mode in result.modes:
+        fontID, size, antialias = mode
+
+
+def all(result):
+    _header = b''.join(header(result))
+    _fonts  = b''.join(fonts(result))
+    _modes  = b''.join(modes(result))
+
+    yield _header
+    yield _fonts

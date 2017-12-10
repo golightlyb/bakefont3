@@ -19,7 +19,8 @@ atlas.
 * customisable character ranges
 * exports font metrics and kerning data
 * efficient packing to reduce physical texture size
-* uses all four colour channels to share space with other RGBA textures
+* can use all four colour channels to share space with other textures (can
+    export RGB, RGBA, greyscale)
 * supports square and rectangle texture atlases of any size
 * metrics accurate up to 1/64th of a pixel (e.g. for supersampling)
 
