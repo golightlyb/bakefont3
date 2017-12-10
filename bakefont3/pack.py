@@ -67,9 +67,9 @@ class pack:
         seen = set()
         for name in fonts:
             assert isinstance(name, str)
-            assert len(name) <= 47 # 48 + null terminator
             # implements freetype-py interface
             assert hasattr(fonts[name], "family_name")
+            assert fonts[name].is_scalable
             if fonts[name] in seen:
                 print("warning: two different font names share the same font face object")
             else:
@@ -83,7 +83,6 @@ class pack:
 
             name, size, antialias = fontmode
             assert isinstance(name, str)
-            assert len(setname) <= 31 # 32 + null terminator
             assert 1 < size < 255
             assert name in fonts, "font mode references a missing font name"
 
@@ -124,10 +123,17 @@ class pack:
         # construct a mapping fontmode ID => superset of characters
         # used by *all* tasks sharing that fontmode
         modeChars = {}
+        # and a table (fontmode ID, charsetname, charset)
+        modeTable = []
         for modeID, name, charset in tasks:
+            assert (modeID, name, charset) not in modeTable
+            modeTable.append((modeID, name, charset))
+
             if not modeChars.get(modeID):
                 modeChars[modeID] = set()
             modeChars[modeID] = modeChars[modeID].union(charset)
+
+        self.modeTable = modeTable
 
         # for each modeChars charset, create a mapping codepoint => rendered glyph
         # ---------------------------------------------------------------------

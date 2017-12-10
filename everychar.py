@@ -49,8 +49,11 @@ fontmode_sans16b = ("Sans Bold", 16, True)
 #               want fewer, like just ASCII, depending on circumstances.
 
 tasks = [
+    # quick version for testing
+    (fontmode_sans14,  "ALL", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"),
+
     #(fontmode_mono14,  "ALL", allchars(fontface_mono)),
-    (fontmode_sans14,  "ALL", allchars(fontface_sans)),
+    #(fontmode_sans14,  "ALL", allchars(fontface_sans)),
     #(fontmode_sans14b, "ALL", allchars(fontface_sans_bold)),
 
     #(fontmode_sans16,  "ALL", allchars(fontface_sans)),
@@ -118,6 +121,7 @@ if not result.image:
 #   * result.data.bytes - raw bytes of the data file
 #   * result.data.save(filename) - saves to a file
 
+result.data.save("test.bf3")
 
 width, height, depth = result.size
 if depth == 4:
