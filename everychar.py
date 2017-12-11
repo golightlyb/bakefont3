@@ -8,9 +8,14 @@ fontdir = os.path.expanduser("~") + "/.fonts" # e.g. /home/me/.fonts
 try:
     fontface_mono = freetype.Face(fontdir+"/RobotoMono-Regular.ttf")
     fontface_sans = freetype.Face(fontdir+"/Roboto-Regular.ttf")
-    fontface_sans_bold = freetype.Face(fontdir+"/Roboto-Bold.ttf")
-except Exception:
-    print("You can download these fonts for free from Google Fonts")
+    fontface_sans_bold = freetype.Face(fontdir + "/Roboto-Bold.ttf")
+    fontface_serif = freetype.Face(fontdir + "/RobotoSlab-Regular.ttf")
+
+    # Roboto fonts don't have any kerning information, so we'll use an example
+    # from Microsoft that has kerning information
+    fontface_sans = freetype.Face("/usr/share/fonts/truetype/msttcorefonts/arial.ttf")
+except freetype.FT_Exception:
+    print("You can download these fonts for free from Google Fonts and Microsoft")
     raise
 
 def allchars(fontface):
@@ -23,6 +28,7 @@ def allchars(fontface):
 #   * face - a freetype.Face object
 fonts = {
     "Sans":      fontface_sans,
+    "Serif":     fontface_serif,
     "Sans Bold": fontface_sans_bold,
     "Mono":      fontface_mono,
 }
@@ -34,6 +40,7 @@ fonts = {
 #   * antialias - True for nice hinting, False for 1-bit
 fontmode_mono14  = ("Mono",      14, True) # (monospace)
 fontmode_sans14  = ("Sans",      14, True)
+fontmode_serif14 = ("Serif",     14, True)
 fontmode_sans14b = ("Sans Bold", 14, True)
 
 fontmode_mono16  = ("Mono",      16, True)
@@ -50,10 +57,11 @@ fontmode_sans16b = ("Sans Bold", 16, True)
 
 tasks = [
     # quick version for testing
-    (fontmode_sans14,  "ALL", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"),
+    # (fontmode_sans14,  "ALL", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"),
 
-    #(fontmode_mono14,  "ALL", allchars(fontface_mono)),
-    #(fontmode_sans14,  "ALL", allchars(fontface_sans)),
+    (fontmode_mono14,  "ALL", allchars(fontface_mono)),
+    (fontmode_sans14,  "ALL", allchars(fontface_sans)),
+    (fontmode_serif14, "ALL", allchars(fontface_serif)),
     #(fontmode_sans14b, "ALL", allchars(fontface_sans_bold)),
 
     #(fontmode_sans16,  "ALL", allchars(fontface_sans)),

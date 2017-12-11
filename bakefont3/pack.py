@@ -103,6 +103,7 @@ class pack:
             mode = (fontID, size, antialias)
             if mode not in modelist:
                 modelist.append(mode)
+        modelist = sorted(modelist) # by ascending fontID, size
         self.modes = modelist
 
         # construct a concrete list of tasks
@@ -225,7 +226,7 @@ class pack:
         # ---------------------------------------------------------------------
 
         if self.size[0]:
-            self.data = Saveable(b''.join(bakefont3.encode.all(self)))
+            self.data = Saveable(b''.join(bakefont3.encode.all(self, cb)))
 
         # ---------------------------------------------------------------------
         cb.stage("Done")

@@ -1,4 +1,5 @@
 import struct
+import itertools
 
 ENDIAN = '<' # always little endian
 
@@ -163,7 +164,7 @@ def modes(result):
         yield b'\0' * (4 + 4 + 4) # RESERVED
 
 
-def index(result, startingOffset):
+def index(result, startingOffset, cb):
     # offset is relative to r = 24 + 8 + (48 * number of fonts)
     #                              + 8 + (32 * number of modes)
 
@@ -174,6 +175,16 @@ def index(result, startingOffset):
 
     offset = startingOffset
 
+    # GLYPHSET structures - variable length, located at a dynamic offset
+    glyphsets = []
+    for modeID, charsetname, glyphs in result.modeTable:
+        glyphsets.append(b''.join(glyphset(result, modeID)))
+
+    # KERNING structures - variable length, located at a dynamic offset
+    kernings = []
+    for modeID, charsetname, glyphs in result.modeTable:
+        kernings.append(b''.join(kerning(result, modeID, charsetname, glyphs, cb)))
+
     # GLYPH TABLE RECORDS - 40 bytes each
     for modeID, charsetname, glyphs in result.modeTable:
         # offset o = r + 8 + (40 * number of (modeID, charsetname) pairs)
@@ -181,26 +192,104 @@ def index(result, startingOffset):
         # o +2 |  2 | RESERVED
         # o +4 |  4 | absolute byte offset of glyph metrics data
         # o +8 |  4 | byte size of glyph metrics data
+        #             (subtract 4, divide by 36 to get number of entries)
         # o+12 |  4 | absolute byte offset of glyph kerning data
         # o+16 |  4 | byte size of glyph kerning data
+        #             (subtract 4, divide by 12 to get number of entries)
         # o+20 | 20 | charset name (string, null terminated)
 
         yield uint16(modeID)
         yield b"\0\0"
-        yield b"TODO"  # absolute byte offset
-        yield b"SIZE"  # TODO byte size
-        yield b"TODO"  # absolute byte offset
-        yield b"SIZE"  # TODO byte size
+
+        # absolute byte offset to glyph metrics structure for this font mode
+        yield uint32(offset)
+        yield uint32(len(glyphsets[modeID]))
+        offset += len(glyphsets[modeID])
+
+        # absolute byte offset to kerning structure for this font mode
+        yield uint32(offset)
+        yield uint32(len(kernings[modeID]))
+        offset += len(kernings[modeID])
+
         yield fixedstring(charsetname, 20)
 
+    for i in range(len(glyphsets)):
+        yield glyphsets[i]
+        yield kernings[i]
+
+
+def glyphset(result, modeID):
+    glyphset = result.modeGlyphs[modeID]
+    _, size, _ = result.modes[modeID]
+
+    # GLYPH SET HEADER - 8 bytes
+    yield b"GSET"                       # r+0 | 4 | debugging marker
+
+    # record - 36 bytes
+    for codepoint, glyph in glyphset.items():
+        # Unicode code point
+        yield uint32(codepoint)  # 4 bytes
+
+        # pixel position in texture atlas
+        yield uint16(glyph.x0)  # 2 bytes
+        yield uint16(glyph.y0)  # 2 bytes
+        yield uint8(glyph.z0)   # 1 byte
+
+        # pixel width in texture atlas
+        yield uint8(glyph.width)  # 1 byte
+        yield uint8(glyph.height) # 1 byte
+        yield uint8(glyph.depth)  # 1 byte (always 0 or 1)
+        assert 0 <= glyph.depth <= 1
+
+        # horizontal left side bearing and top side bearing
+        # positioning information relative to baseline
+        yield fp26_6(glyph.ftGlyph.metrics.horiBearingX)  # 4 bytes
+        yield fp26_6(glyph.ftGlyph.metrics.horiBearingY)  # 4 bytes
+        # advance - how much to advance the pen by horizontally after drawing
+        yield fp26_6(glyph.ftGlyph.metrics.horiAdvance)  # 4 bytes
+
+        yield fp26_6(glyph.ftGlyph.metrics.vertBearingX)  # 4 bytes
+        yield fp26_6(glyph.ftGlyph.metrics.vertBearingY)  # 4 bytes
+        # advance - how much to advance the pen by horizontally after drawing
+        yield fp26_6(glyph.ftGlyph.metrics.vertAdvance)  # 4 bytes
+
+
+def kerning(result, modeID, setname, glyphset, cb):
+    fontID, size, antialias = result.modes[modeID]
+    font, face = result.fonts[fontID]
+
+    size_fp = int(size * 64.0)  # convert to fixed point 26.6 format
+    dpi = 72  # typographic DPI where 1pt = 1px
+    face.set_char_size(size_fp, 0, dpi, 0)
+
+    if not face.has_kerning:
+        yield b'KERN'
+        raise StopIteration
+
+    # GLYPH SET HEADER - 8 bytes
+    yield b"KERN"                       # r+0 | 4 | debugging marker
+
+    cb.stage("Gathering kerning data for font %s %s %s, table %s" \
+        % (repr(font), size, 'AA' if antialias else 'noAA', repr(setname)))
+
+    combinations = list(itertools.permutations(glyphset, 2))
+    num = 0; count = len(combinations)
+
+    # record - 12 bytes
+    for codepointL, codepointR in sorted(combinations):
+        num += 1; cb.step(num, count)
+
+        indexL = face.get_char_index(codepointL)
+        indexR = face.get_char_index(codepointR)
+        kerning = face.get_kerning(indexL, indexR)
+        if kerning.x:
+            yield uint32(indexL)
+            yield uint32(indexR)
+            yield fp26_6(kerning.x)
 
 
 
-def kerning(result):
-    return (None, None)
-
-
-def all(result):
+def all(result, cb):
     preambleBytesize = 24 + \
                        8 + (48 * len(result.fonts)) + \
                        8 + (32 * len(result.modes)) + \
@@ -209,10 +298,9 @@ def all(result):
     _header  = b''.join(header(result, preambleBytesize))
     _fonts   = b''.join(fonts(result))
     _modes   = b''.join(modes(result))
-    _index   = b''.join(index(result, preambleBytesize))
+    _index   = b''.join(index(result, preambleBytesize, cb))
 
     yield _header
     yield _fonts
     yield _modes
     yield _index
-    # TODO yield _kerning

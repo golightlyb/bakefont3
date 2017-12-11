@@ -1,16 +1,15 @@
 # bakefont3 #
 
 *bakefont3* is a python3 module for rasterising font glyphs into a RGBA texture
-atlas.
+atlas and exporting metrics and kerning information.
 
 ![Example](./docs/example.png)
 
 ## TODO ##
 
-* kerning tables aren't saved yet
 * haven't tested anything yet
+* haven't done example of reading the data yet
 * docs
-* clean up
 
 
 ## Features ##
@@ -27,28 +26,7 @@ atlas.
 
 ## Example Usage ##
 
-### example-generate.py
-
-This Python script demonstrates how to define the set of characters you want
-and the font faces and font sizes you want, then generate a PNG texture atlas as
-and a bakefont3 data file.
-
-    # generates test.bf3 and test.png
-    python3 example-generate.py test
-
-### example-write.c
-
-**TODO TODO TODO**
-
-This program demonstrates loading and parsing a bakefont data file in C, then
-using it to write some text and display it on screen using GLFW3.
-
-    # Select a "Sans Serif" size 14 font generated earlier,
-    # read text from stdin,
-    # and render it to out.png
-
-    cat text.txt | ./example-write test.png test.bf3 "Sans Serif" 14 out.png
-
+TODO
 
 
 ## Dependencies ##

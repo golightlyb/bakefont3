@@ -5,7 +5,7 @@ import freetype
 
 
 class Render(bf3.Cube):
-    __slots__ = 'image'
+    __slots__ = ['image', 'ftGlyph']
 
     def __init__(self, ftFace, codepoint, antialias=True):
 
@@ -53,9 +53,14 @@ class Render(bf3.Cube):
             super().__init__(0, 0, 0, 0, 0, 0)
             self.image = None
 
+        self.ftGlyph = ftFace.glyph
+
 
 class Glyph(bf3.Cube):
     __slots__ = ['codepoint', 'render']
+
+    def __getattr__(self, attr):
+        return getattr(self.render, attr)
 
     @property
     def char(self):
