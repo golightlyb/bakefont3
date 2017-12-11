@@ -1,7 +1,11 @@
 import struct
 import itertools
+import freetype
 
 ENDIAN = '<' # always little endian
+
+# If you make a modified version, please change this string!
+ENCODER = "Bakefont 3.0.1 (https://github.com/golightlyb/bakefont3)"
 
 
 def fp26_6(native_num):
@@ -63,6 +67,7 @@ def b8string(nativeString, encoding="utf-8"):
     return uint8(length) + bytes + b'\0';
 
 def fixedstring(nativeString, bufsize, encoding="utf-8"):
+    assert '\0' not in nativeString # can't become a C string
     spare = bufsize - len(nativeString)
     assert spare >= 1
     bytes = nativeString.encode(encoding)
@@ -195,7 +200,7 @@ def index(result, startingOffset, cb):
         #             (subtract 4, divide by 36 to get number of entries)
         # o+12 |  4 | absolute byte offset of glyph kerning data
         # o+16 |  4 | byte size of glyph kerning data
-        #             (subtract 4, divide by 12 to get number of entries)
+        #             (subtract 4, divide by 16 to get number of entries)
         # o+20 | 20 | charset name (string, null terminated)
 
         yield uint16(modeID)
@@ -222,7 +227,7 @@ def glyphset(result, modeID):
     glyphset = result.modeGlyphs[modeID]
     _, size, _ = result.modes[modeID]
 
-    # GLYPH SET HEADER - 8 bytes
+    # GLYPH SET HEADER - 4 bytes
     yield b"GSET"                       # r+0 | 4 | debugging marker
 
     # record - 36 bytes
@@ -266,7 +271,7 @@ def kerning(result, modeID, setname, glyphset, cb):
         yield b'KERN'
         raise StopIteration
 
-    # GLYPH SET HEADER - 8 bytes
+    # GLYPH SET HEADER - 4 bytes
     yield b"KERN"                       # r+0 | 4 | debugging marker
 
     cb.stage("Gathering kerning data for font %s %s %s, table %s" \
@@ -275,17 +280,62 @@ def kerning(result, modeID, setname, glyphset, cb):
     combinations = list(itertools.permutations(glyphset, 2))
     num = 0; count = len(combinations)
 
-    # record - 12 bytes
+    # record - 16 bytes
     for codepointL, codepointR in sorted(combinations):
         num += 1; cb.step(num, count)
+
+        #  0 | 4 | uint32 Unicode Codepoint of left glyph in kerning pair
+        #  4 | 4 | uint32 Unicode Codepoint of right glyph in kerning pair
+        #  8 | 4 | (floating point 26.6; divide by 64.0) grid-fitted offset x (pixels)
+        # 12 | 4 | (floating point 26.6; divide by 64.0) non-grid-fitted offset x (pixels)
 
         indexL = face.get_char_index(codepointL)
         indexR = face.get_char_index(codepointR)
         kerning = face.get_kerning(indexL, indexR)
-        if kerning.x:
+        kerning_fine = face.get_kerning(indexL, indexR, freetype.FT_KERNING_UNFITTED)
+        if kerning.x or kerning_fine.x:
             yield uint32(indexL)
             yield uint32(indexR)
             yield fp26_6(kerning.x)
+            yield fp26_6(kerning_fine.x)
+
+
+def notes(result):
+    # GLYPH SET HEADER - 8 bytes
+    yield b"INFO"                       # 0 | 4 | debugging marker
+
+    # some info about the fonts, in case the author forgets and wants to go
+    # back and generate the same file again.
+
+    def font_notes(font):
+        name, face = font
+        return "    %s: %s," % (repr(name), repr(face.family_name.decode("ascii", "replace")))
+
+    def mode_notes(mode):
+        fontID, size, antialias = mode
+        name, face = result.fonts[fontID]
+        return "    (%s, %s, %s)," % (repr(name), size, "True" if antialias else "False")
+
+    notes = """
+
+encoder = """ + repr(ENCODER) + """;
+
+fonts = {
+"""\
+    +'\n'.join(map(font_notes, result.fonts))+\
+"""
+};
+
+modes = [
+"""\
+    +'\n'.join(map(mode_notes, result.modes))+\
+"""
+];
+
+"""
+
+    yield uint32(len(notes))
+    yield notes.encode("utf-8")
 
 
 
@@ -299,8 +349,10 @@ def all(result, cb):
     _fonts   = b''.join(fonts(result))
     _modes   = b''.join(modes(result))
     _index   = b''.join(index(result, preambleBytesize, cb))
+    _notes   = b''.join(notes(result))
 
     yield _header
     yield _fonts
     yield _modes
     yield _index
+    yield _notes

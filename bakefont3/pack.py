@@ -116,7 +116,7 @@ class pack:
             task = (modeID, name, set(charset))
             _tasks.append(task)
             if pair in seen:
-                raise KeyError("task contains a duplicate (mode, charname) pair")
+                raise KeyError("task contains a duplicate (mode, charname) pair (%d, %s)" % (modeID, name))
             else:
                 seen.add((modeID, name))
         tasks = _tasks
