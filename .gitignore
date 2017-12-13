@@ -5,3 +5,5 @@ __pycache__
 *outfile*
 /*.png
 /*.bf3
+/*.bin
+/a.out

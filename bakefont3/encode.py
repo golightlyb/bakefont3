@@ -107,7 +107,7 @@ def fonts(result):
     yield b"\0\0"                   # 30 | 2 | padding (realign to 8 bytes)
 
     # FONT RECORDS - 48 bytes * number of fonts
-    # (for n = 0; n => n + 1; each record is at offset 24 + 48n)
+    # (for n = 0; n => n + 1; each record is at offset 32 + 48n)
     # the FontID is implicit by the order e.g. the first font has FontID 0
     for font in result.fonts:
         name, face = font
