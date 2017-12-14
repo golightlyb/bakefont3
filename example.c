@@ -67,7 +67,8 @@ int main(int argc, char *argv[])
     FILE *fimage = fopen(argv[2], "rb");
     if (!fimage) { fprintf(stderr, "Could not open %s\n", argv[2]); return -1; }
     
-    // tell bakefont3 how to read the data
+    // a simple structure that tells bakefont3 how to read the data
+    // (bakefont3 doesn't care about the file system)
     bf3_filelike data_reader = {(void *)fdata, read_FILE};
 
     // peek at the the header telling us what's in the bakefont3 file
@@ -77,11 +78,12 @@ int main(int argc, char *argv[])
     if (!header_size) { fprintf(stderr, "Not a bf3 file %s\n", argv[1]); return -1; }
     
     // allocate a buffer to hold the header information
-    // don't free() this until you're done using bakefont3
+    // don't free() this until you're done using bakefont3 for anything
+    // related to this file
     char *hdr = malloc(header_size);
     if (!hdr) { fprintf(stderr, "Malloc error (header)\n"); return -1; }
     
-    // parse the header
+    // parse the header and store some initial info
     bf3_info info;
     if (!bf3_header_load(&info, &data_reader, hdr, header_size))
         { fprintf(stderr, "Error reading header\n"); return -1; }
@@ -91,12 +93,16 @@ int main(int argc, char *argv[])
     printf("number of modes: %d\n", info.num_modes);
     printf("number of tables: %d\n", info.num_tables);
 
-    // iterate through the fonts table
-    // and let's look for a font named Sans
+    // Iterate through the fonts table.
+    // and let's look for a font named "Sans"
     // (please edit this line if you have given the fonts different names)
     const char *wanted_font = "Sans";
     bf3_font font_sans;
     found = false;
+    
+    // Fonts are basically "Font ID" (number) and "Font Name" (string), where
+    // the Font Name has been chosen by the person who generated the bakefont3
+    // data file. Each Font ID is unique in the file.
     
     for (int i = 0; i < info.num_fonts; i++)
     {
@@ -121,6 +127,12 @@ int main(int argc, char *argv[])
     bf3_mode mode_sans16;
     found = false;
     
+    // Font Modes are basically "Mode ID" (number), a "Font ID" (number)
+    // referencing the previous fonts table, the font size (1pt==1px at 72dpi)
+    // (a Real number encoded as FP26), and whether or not the font was
+    // rasterised with antialiasing/hinting (boolean).
+    // Each Mode ID is unique in a file.
+    
     for (int i = 0; i < info.num_modes; i++)
     {
         bf3_mode mode;
@@ -140,21 +152,38 @@ int main(int argc, char *argv[])
         return -1;
     }
     
+    
+    // Font Modes also give you some information that's true across all glyphs
+    // for that Mode. Again these are Real numbers encoded as FP26.
     printf("Found the font mode we wanted.\n");
     printf("Lineheight: %.2fpx\n", BF3_DECODE_FP26(mode_sans16.lineheight));
     printf("Underline center position relative to baesline: %.2fpx\n",
-        BF3_DECODE_FP26(mode_sans16.underline_position));
+        BF3_DECODE_FP26(mode_sans16.underline_position)); // down is negative?
     printf("Underline thickness: %.2fpx\n",
         BF3_DECODE_FP26(mode_sans16.underline_thickness));
     
-    // iterate through the glyph set table
-    // and lets look for a glyph set using our chosen mode with the name
-    // "ALL" (you might use a different name, like "FPS", if you had a reduced
-    // character set as an optimisation for a specific purpose)
+    // Iterate through the glyphset table
+    // and lets look for a glyph set using our chosen mode with the name "ALL"
     // (please edit this line if you used different names)
     const char *wanted_table_name = "ALL";
     bf3_table table_sans16_all;
     found = false;
+    
+    // The glyphset table tells us, for a given Mode ID, how we are later going
+    // to load information about the Glyph metrics (like the size of a glyph,
+    // where its position is in the texture atlas) and kerning (when you
+    // display two characters next to eachother, how you tweak the offset
+    // to make them look nicer).
+    
+    // Glyphset tables are identified by a name, and have information on
+    // different sets of glyphs. A single font mode might have several tables
+    // for different purposes, so that looking up information can be fast.
+    // e.g. a FPS display mode that only needs the glyphs for "FPS: 0123456789"
+    // e.g. a fancy large title mode that only needs the glyphs for A-Z
+    // e.g. a general-purpose mode that needs all glyphs supported by a font
+    //      (as a convention, please use the name "ALL" for this one)
+    // e.g. a tileset mode for graphics, like how the game Dwarf Fortress only
+    //      uses Codepage 437 to render its graphics.
     
     for (int i = 0; i < info.num_tables; i++)
     {
@@ -191,6 +220,12 @@ int main(int argc, char *argv[])
     if (!bf3_kerning_load(&data_reader, kerning, &table_sans16_all))
         { fprintf(stderr, "Error reading font kerning information\n"); return -1; }
     
+    // we now have lookup tables that we can quickly index by a unicode code point
+    
+    // lets query a couple to test...
+    // (a function that returns code points from utf-8 would be useful)
+    uint32_t codepoint_a = (unsigned char) 'a';
+    uint32_t codepoint_omega = 0x03A9; // Ω;
     
     
     free(kerning);
