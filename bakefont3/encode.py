@@ -4,8 +4,10 @@ import freetype
 
 ENDIAN = '<' # always little endian
 
-# If you make a modified version, please change this string!
-ENCODER = "Bakefont 3.0.1 (https://github.com/golightlyb/bakefont3)"
+# If you make a modified version, please change the URL in the string to
+# let people know what generated the file!
+# example: Bakefont 3.0.2 (compatible; Acme Inc version 1.3)
+ENCODER = "Bakefont 3.0.2 (https://github.com/golightlyb/bakefont3)"
 
 
 def fp26_6(native_num):
@@ -80,7 +82,7 @@ def header(result, bytesize):
     # Notation: `offset | size | notes`
 
     # HEADER - 24 byte block
-    yield b"BAKEFONTv3r0"  #  0 | 12 | magic bytes, version 3 revision 0
+    yield b"BAKEFONTv3r1"  #  0 | 12 | magic bytes, version 3 revision 1
     yield uint16(width)    # 12 |  2 | texture atlas width
     yield uint16(height)   # 14 |  2 | texture atlas height
     yield uint16(depth)    # 16 |  2 | texture atlas depth (1, 3, 4)
@@ -137,7 +139,7 @@ def modes(result):
         fontID, size, antialias = mode
         _, face = result.fonts[fontID]
 
-        # offset o = r + 8 + (48 * number of modes)
+        # offset o = r + 8 + (32 * n)
         # o +0 |  2 | font ID
         # o +2 |  1 | flag: 'A' if the font is antialiased, otherwise 'a'
         # o +3 |  1 | RESERVED
@@ -191,7 +193,8 @@ def index(result, startingOffset, cb):
         kernings.append(b''.join(kerning(result, modeID, charsetname, glyphs, cb)))
 
     # GLYPH TABLE RECORDS - 40 bytes each
-    for modeID, charsetname, glyphs in result.modeTable:
+    for index, tple in enumerate(result.modeTable):
+        modeID, charsetname, glyphs = tple
         # offset o = r + 8 + (40 * number of (modeID, charsetname) pairs)
         # o +0 |  2 | mode ID
         # o +2 |  2 | RESERVED
@@ -208,13 +211,13 @@ def index(result, startingOffset, cb):
 
         # absolute byte offset to glyph metrics structure for this font mode
         yield uint32(offset)
-        yield uint32(len(glyphsets[modeID]))
-        offset += len(glyphsets[modeID])
+        yield uint32(len(glyphsets[index]))
+        offset += len(glyphsets[index])
 
         # absolute byte offset to kerning structure for this font mode
         yield uint32(offset)
-        yield uint32(len(kernings[modeID]))
-        offset += len(kernings[modeID])
+        yield uint32(len(kernings[index]))
+        offset += len(kernings[index])
 
         yield fixedstring(charsetname, 20)
 

@@ -2,6 +2,10 @@
 #include <string.h> // memcpy
 
 
+// NOTE - this implementation works for LITTLE ENDIAN HOSTS only
+// (its quite trivial to fix but I don't have anything to test on)
+
+
 size_t bf3_header_peek(bf3_filelike *filelike)
 {
     // HEADER - 24 byte block
@@ -17,7 +21,7 @@ size_t bf3_header_peek(bf3_filelike *filelike)
     
     size_t was_read = filelike->read(filelike, buf, 0, 20);
     if (was_read < 20) { return 0; }
-    if (0 != memcmp(buf, "BAKEFONTv3r0", 12)) { return 0; }
+    if (0 != memcmp(buf, "BAKEFONTv3r1", 12)) { return 0; }
     
     memcpy(&size, buf + 18, 2);
     
@@ -25,7 +29,7 @@ size_t bf3_header_peek(bf3_filelike *filelike)
 }
 
 
-bf3_header bf3_header_load(bf3_filelike *filelike, char *hdr, size_t header_size)
+bool bf3_header_load(bf3_info *info, bf3_filelike *filelike, char *hdr, size_t header_size)
 {
     // HEADER - 24 byte block
     // b"BAKEFONTv3r0"  #  0 | 12 | magic bytes, version 3 revision 0
@@ -35,7 +39,7 @@ bf3_header bf3_header_load(bf3_filelike *filelike, char *hdr, size_t header_size
     // uint16(bytesize) # 18 |  2 | ...
     // b'\0\0\0\0'      # 20 |  4 | padding (realign to 8 bytes)
 
-    int w, h, d, num_fonts, num_modes;
+    int w, h, d, num_fonts, num_modes, num_tables;
 
     size_t was_read = filelike->read(filelike, hdr, 0, header_size);
     if (was_read < header_size) { goto fail; }
@@ -63,19 +67,33 @@ bf3_header bf3_header_load(bf3_filelike *filelike, char *hdr, size_t header_size
     // uint16(len(result.modes)) # r+4 | 2 | number of modes
     // b"\0\0"                   # r+6 | 2 | padding (realign to 8 bytes)
     
-    size_t offset = 32 + (48 * (size_t ) num_fonts);
+    size_t offset = 32 + (48 * num_fonts);
     if (0 != memcmp(hdr + offset, "MODE", 4)) { goto fail; }
     memcpy(v, hdr + 4 + offset, 2);
     num_modes = v[0];
     
-    return (bf3_header) {w, h, d, num_fonts, num_modes};
+    //offset is relative to r = 24 + 8 + (48 * number of fonts)
+    //                              + 8 + (32 * number of modes)
+
+    // GLYPH TABLE HEADER - 8 bytes
+    // b"GTBL"                       # r+0 | 4 | debugging marker
+    // uint16(len(result.modeTable)) # r+4 | 2 | number of (modeID, charsetname) pairs
+    offset = 32 + (48 * num_fonts) + 8 + (32 * num_modes);
+    if (0 != memcmp(hdr + offset, "GTBL", 4)) { goto fail; }
+    memcpy(v, hdr + 4 + offset, 2);
+    num_tables = v[0];
+    
+    
+    bf3_info _info = {w, h, d, num_fonts, num_modes, num_tables};
+    memcpy(info, &_info, sizeof(bf3_info));
+    return true;
     
     fail:
-        return (bf3_header) {0, 0, 0, 0, 0};
+        return false;
 }
 
 
-bf3_font bf3_font_at(int index, char *buf)
+void bf3_font_get(bf3_font *font, char *buf, int index)
 {
     // 32+48n |  4 | attributes
     // 36+48n | 44 | name for font with FontID=n (null terminated string)
@@ -84,36 +102,122 @@ bf3_font bf3_font_at(int index, char *buf)
     char vertical   = *(buf + 32 + 1 + (48 * i)) == 'V';
     const char *name = buf + 32 + 4 + (48 * i);
     
-    return (bf3_font) {index, horizontal, vertical, name};
+    bf3_font _font = {index, horizontal, vertical, name};
+    memcpy(font, &_font, sizeof(bf3_font));
 }
 
 
-bf3_font bf3_fonts_start(char *hdr)
+void bf3_mode_get(bf3_mode *mode, char *buf, int index)
 {
-    // FONT TABLE HEADER - 6 bytes
-    // b"FONT"                   # 24 | 4 | debugging marker
-    // uint16(len(result.fonts)) # 28 | 2 | number of fonts
-    // b"\0\0"                   # 30 | 2 | padding (realign to 8 bytes)
+    uint16_t num_fonts;
+    memcpy(&num_fonts, buf + 28, 2);
+    
+    size_t offset = 24 + 8 + (48 * num_fonts); // past font table
+    offset += 8; // past mode header
+    offset += (32 * index);
+    
+    
+    // o +0 |  2 | font ID
+    // o +2 |  1 | flag: 'A' if the font is antialiased, otherwise 'a'
+    // o +3 |  1 | RESERVED
+    // o +4 |  4 | font size - fixed point 26.6
+    //            (divide the signed int32 by 64 to get original float)
+    // o +8 |  4 | lineheight aka linespacing - (fixed point 26.6)
+    // o+12 |  4 | underline position relative to baseline (fixed point 26.6)
+    // o+16 |  4 | underline vertical thickness, centered on position (fp26.6)
+    // o+20 | 12 | RESERVED
+    
+    uint16_t font_id;
+    memcpy(&font_id, buf + offset + 0, 2);
+    
+    char antialias = *(buf + offset + 2) == 'A';
+    
+    uint32_t pts[4];
+    memcpy(pts, buf + offset + 4, 16);
+    
+    bf3_fp26 size                = { pts[0] };
+    bf3_fp26 lineheight          = { pts[1] };
+    bf3_fp26 underline_position  = { pts[2] };
+    bf3_fp26 underline_thickness = { pts[3] };
+    
+    bf3_mode _mode = {index, font_id, antialias,
+        size, lineheight, underline_position, underline_thickness};
+    
+    memcpy(mode, &_mode, sizeof(bf3_mode));
+}
 
-    // FONT RECORDS - 48 bytes * number of fonts
-    // (for n = 0; n => n + 1; each record is at offset 32 + 48n)
-    // the FontID is implicit by the order e.g. the first font has FontID 0
-    // 32+48n |  4 | attributes
-    // 36+48n | 44 | name for font with FontID=n (null terminated string)
+
+void bf3_table_get(bf3_table *table, char *buf, int index)
+{
+    // 40 byte records
+    // 40n +0 |  2 | mode ID
+    // 40n +2 |  2 | RESERVED
+    // 40n +4 |  4 | absolute byte offset of glyph metrics data
+    // 40n +8 |  4 | byte size of glyph metrics data
+    //             (subtract 4, divide by 36 to get number of entries)
+    // 40n+12 |  4 | absolute byte offset of glyph kerning data
+    // 40n+16 |  4 | byte size of glyph kerning data
+    //             (subtract 4, divide by 16 to get number of entries)
+    // 40n+20 | 20 | charset name (string, null terminated)
     
-    uint16_t num;
-    if (0 != memcmp(hdr + 24, "FONT", 4)) { goto fail; }
-    memcpy(&num, hdr + 28, 2);
-    if (!num) { goto fail; }
+    uint16_t num_fonts, num_modes;
     
-    return bf3_font_at(0, hdr);
+    memcpy(&num_fonts, buf + 28, 2);
+    memcpy(&num_modes, buf + 32 + (48 * num_fonts) + 4, 2);
+    
+    size_t offset = 32 + (48 * num_fonts) + 8 + (32 * num_modes) + 8;
+    offset += (40 * index);
+    
+    uint16_t mode_id;
+    uint32_t metrics_offset, metrics_size, kerning_offset, kerning_size;
+    
+    memcpy(&mode_id,        buf + offset +  0, 2);
+    memcpy(&metrics_offset, buf + offset +  4, 4);
+    memcpy(&metrics_size,   buf + offset +  8, 4);
+    memcpy(&kerning_offset, buf + offset + 12, 4);
+    memcpy(&kerning_size,   buf + offset + 16, 4);
+    const char *name = buf + offset + 20;
+    
+    bf3_table _table = {index, mode_id, metrics_offset, metrics_size,
+        kerning_offset, kerning_size, name};
+    
+    memcpy(table, &_table, sizeof(bf3_table));
+}
+
+
+bool bf3_metrics_load(bf3_filelike *filelike, char *metrics, bf3_table *table)
+{
+    if (table->metrics_size < 4) { goto fail; }
+    
+    size_t was_read = filelike->read(filelike, metrics, table->metrics_offset, table->metrics_size);
+    if (was_read < table->metrics_size) { goto fail; }
+    
+    if (0 != memcmp(metrics, "GSET", 4)) { goto fail; }
+    
+    uint32_t num = (table->metrics_size - 4) / 40;
+    memcpy(metrics, &num, 4);
+    
+    return true;
     
     fail:
-        return (bf3_font) {num, 0, 0, NULL};
+        return false;
 }
 
 
-bf3_font bf3_fonts_next(char *hdr, bf3_font prev_font)
+bool bf3_kerning_load(bf3_filelike *filelike, char *kerning, bf3_table *table)
 {
-    return bf3_font_at(prev_font.id + 1, hdr);
+    if (table->kerning_size < 4) { goto fail; }
+    
+    size_t was_read = filelike->read(filelike, kerning, table->kerning_offset, table->kerning_size);
+    if (was_read < table->kerning_size) { goto fail; }
+    
+    if (0 != memcmp(kerning, "KERN", 4)) { goto fail; }
+    
+    uint32_t num = (table->kerning_size - 4) / 16;
+    memcpy(kerning, &num, 4);
+    
+    return true;
+    
+    fail:
+        return false;
 }
