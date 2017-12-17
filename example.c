@@ -1,7 +1,7 @@
 // Example program loading bakefont3 data and using it to display text
 
 // COMPILE:
-//     gcc -std=c99 example.c bakefont3.c -Wall -Wextra -o example.bin
+//     gcc -std=c99 example.c bakefont3.c -lm -Wall -Wextra -o example.bin
 // USAGE:
 //     ./example.bin example/test.bf3 example/test-rgba.png
 
@@ -47,6 +47,25 @@ size_t (read_FILE)(bf3_filelike *filelike, char *dest, size_t offset, size_t num
     
     return total_read;
 }
+
+
+void print_metric_info(bf3_metric *metric)
+{
+    printf("Metric:");
+    printf("\tCodepoint %u\n", metric->codepoint);
+    printf("\tTexture position (x, y, channel): %d, %d, %d\n",
+        metric->tex_x, metric->tex_y, metric->tex_z);
+    printf("\tTexture size (x, y, depth): %d, %d, %d\n",
+        metric->tex_w, metric->tex_h, metric->tex_d);
+    
+    printf("\tHorizontal left side bearing: %.2f\n",  BF3_DECODE_FP26(metric->hbx));
+    printf("\tHorizontal top side bearing: %.2f\n",   BF3_DECODE_FP26(metric->hby));
+    printf("\tHorizontal advance: %.2f\n",            BF3_DECODE_FP26(metric->hadvance));
+    printf("\tVertical left side bearing: %.2f\n",    BF3_DECODE_FP26(metric->vbx));
+    printf("\tVertical top side bearing: %.2f\n",     BF3_DECODE_FP26(metric->vby));
+    printf("\tVertical advance: %.2f\n",              BF3_DECODE_FP26(metric->vadvance));
+}
+
 
 
 int main(int argc, char *argv[])
@@ -222,7 +241,7 @@ int main(int argc, char *argv[])
     
     // we now have lookup tables that we can quickly index by a unicode code point
     
-    // lets query a couple to test...
+    // lets query a couple of glyph metrics...
     // (a function that returns code points from utf-8 would be useful)
     uint32_t codepoint_a = (unsigned char) 'a';
     uint32_t codepoint_omega = 0x03A9; // Ω;
@@ -231,13 +250,56 @@ int main(int argc, char *argv[])
     if (bf3_metric_get(&metric, metrics, codepoint_a))
     {
         printf("Found a!\n");
+        print_metric_info(&metric);
     }
-    /*
+    else
+    {
+        printf("Didn't find a\n");
+    }
+    
+    
     if (bf3_metric_get(&metric, metrics, codepoint_omega))
     {
         printf("Found Ω!\n");
+        print_metric_info(&metric);
     }
-     */
+    else
+    {
+        printf("Didn't find Ω\n");
+    }
+    
+    
+    // lets query a couple of kerning pairs...
+    
+    // WWW. <- the dot moves closer to the W in some fonts
+    uint32_t codepoint_W = (unsigned char) 'W';
+    uint32_t codepoint_period = (unsigned char) '.';
+    
+    // BRAVO <- the A and V move closer in some fonts
+    uint32_t codepoint_A = (unsigned char) 'A';
+    uint32_t codepoint_V = (unsigned char) 'V';
+    
+    bf3_kpair kpair;
+    if (bf3_kpair_get(&kpair, kerning, codepoint_W, codepoint_period))
+    {
+        printf("Found ('W','.') kerning pair!\n");
+        printf("X offset: %d (%.2f)\n", kpair.x, BF3_DECODE_FP26(kpair.xf));
+    }
+    else
+    {
+        printf("Didn't find ('W','.') kerning pair\n");
+    }
+    
+    if (bf3_kpair_get(&kpair, kerning, codepoint_A, codepoint_V))
+    {
+        printf("Found ('A','V') kerning pair!\n");
+        printf("X offset: %d (%.2f)\n", kpair.x, BF3_DECODE_FP26(kpair.xf));
+    }
+    else
+    {
+        printf("Didn't find ('A','V') kerning pair\n");
+    }
+    
     
     free(kerning);
     free(metrics);

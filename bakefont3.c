@@ -6,6 +6,21 @@
 // (its quite trivial to fix but I don't have anything to test on)
 
 
+int BF3_DECODE_FP26_CEIL_impl(bf3_fp26 x, bf3_fp26 tolerance)
+{
+    // TODO (PERF) this could be clever enough to operate on the integers
+    
+    float fx = BF3_DECODE_FP26(x);
+    float ftolerance = BF3_DECODE_FP26(tolerance);
+    ftolerance = copysignf(ftolerance, fx);
+    
+    float sgn_ceil = copysignf(0.5f, fx); // round towards +/-ve infinity
+    
+    float result = (fx - ftolerance + sgn_ceil);
+    return (int) lround(result);
+}
+
+
 size_t bf3_header_peek(bf3_filelike *filelike)
 {
     // HEADER - 24 byte block
@@ -231,7 +246,7 @@ static void bf3_metric_decode(bf3_metric *metric, const char *buf)
     memcpy(metric, buf, 36);
 }
 
-#include <stdio.h>
+
 bool bf3_metric_get(bf3_metric *metric, const char *metrics, uint32_t codepoint)
 {
     // read nmemb we stashed earlier
@@ -242,8 +257,6 @@ bool bf3_metric_get(bf3_metric *metric, const char *metrics, uint32_t codepoint)
     // start of the metrics buffer?
 #   define RECORD(n) (4 + (36*(n)))
     
-    // fo
-    
     // binary search for a matching codepoint
     size_t start = 0;
     size_t pos   = nmemb / 2;
@@ -252,12 +265,10 @@ bool bf3_metric_get(bf3_metric *metric, const char *metrics, uint32_t codepoint)
     while ((pos >= start) && (pos < end))
     {
         size_t offset = RECORD(pos);
-        int cmp = memcmp(&codepoint, metrics + offset, 4);
-        
         uint32_t current;
         memcpy(&current, metrics + offset, 4);
-        printf("Check [%d,%d,%d] for %u, got %u\n", (int) start, (int) pos, (int) end, codepoint, current);
         
+        int cmp = (codepoint == current) ? 0 : (codepoint > current) ? 1 : -1;
         if (cmp == 0)
         {
             bf3_metric_decode(metric, metrics + offset);
@@ -265,6 +276,65 @@ bool bf3_metric_get(bf3_metric *metric, const char *metrics, uint32_t codepoint)
         }
         else if (cmp < 0) { end = pos; }
         else if (cmp > 0) { start = pos + 1; }
+        
+        pos = start + ((end - start) / 2);
+    }
+    
+    return false;
+    
+#   undef RECORD
+}
+
+
+static void bf3_kpair_decode(bf3_kpair *kpair, const char *buf)
+{
+    bf3_fp26 x, xf;
+    
+    memcpy(&x,  buf + 8, 4);
+    memcpy(&xf, buf + 12, 4);
+    
+    kpair->x  = BF3_DECODE_FP26_NEAREST(x);
+    kpair->xf = xf;
+}
+
+
+bool bf3_kpair_get(bf3_kpair *kpair, const char *kerning,
+    uint32_t codepoint_left, uint32_t codepoint_right)
+{
+    // read nmemb we stashed earlier
+    uint32_t nmemb;
+    memcpy(&nmemb, kerning, 4);
+
+    // for a record, n, where is the offset to its codepoint relative to the
+    // start of the kerning buffer?
+#   define RECORD(n) (4 + (16*(n)))
+    
+    // binary search for a matching (left, right) pair
+    size_t start = 0;
+    size_t pos   = nmemb / 2;
+    size_t end   = nmemb;
+    
+    while ((pos >= start) && (pos < end))
+    {
+        size_t offset = RECORD(pos);
+        uint32_t current_left, current_right;
+        memcpy(&current_left,  kerning + offset,     4);
+        memcpy(&current_right, kerning + offset + 4, 4);
+        
+        int cmp0 = (codepoint_left  == current_left)  ? 0 :
+            (codepoint_left > current_left) ? 1 : -1;
+        int cmp1 = (codepoint_right == current_right) ? 0 :
+            (codepoint_right > current_right) ? 1 : -1;
+        
+        if ((cmp0 == 0) && (cmp1 == 0))
+        {
+            bf3_kpair_decode(kpair, kerning + offset);
+            return true;
+        }
+        else if ((cmp0 == 0) && (cmp1 < 0)) { end = pos; }
+        else if ((cmp0 == 0) && (cmp1 > 0)) { start = pos + 1; }
+        else if (cmp0 < 0) { end = pos; }
+        else if (cmp0 > 0) { start = pos + 1; }
         
         pos = start + ((end - start) / 2);
     }

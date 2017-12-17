@@ -6,12 +6,6 @@ loading that information.
 
 ![Example](./docs/example.png)
 
-## TODO ##
-
-* haven't tested anything yet
-* haven't done example of reading the data yet
-* docs
-
 
 ## Features ##
 
@@ -44,8 +38,7 @@ easily achievable without breaking backwards compatibility. Please get in touch
 if you can help with this.
 
 Bakefont3 does not include a layout engine. It just exports the metrics that
-a layout engine would need. The example C program demonstrates a simple layout
-engine.
+a layout engine would need.
 
 
 ## Example Usage ##
@@ -82,7 +75,7 @@ change the font data it tries to load.
 querying bakefont3 data.
 
     $ # Compile
-    $ gcc -std=c99 example.c bakefont3.h bakefont3.c -o example.bin
+    $ gcc -std=c99 example.c bakefont3.h bakefont3.c -lm -o example.bin
     # # Run
     $ ./example test.bf3 test-rgba.png
 
@@ -103,13 +96,8 @@ Example:
 
 ### For the C example program:
 
-    * libpng
-    * libglfw3
+    * Maths: link with `-lm`
     * a C compiler (e.g. gcc, clang)
-
-Example:
-
-    sudo apt-get install libpng12-0
 
 
 ## Useful notes ##
@@ -132,9 +120,8 @@ This encodes a [Real number](https://en.wikipedia.org/wiki/Real_number) as a
 signed 32 bit integer. Divide by 64.0 to get the Real value. Or, multiply
 a Real value by 64.0 and cast to a signed 32 bit integer to encode it.
 
-(Don't worry about this unless you are directly parsing Bakefont3 output or
-interfacing with Freetype yourself. Freetype also has a "2.14 fixed float"
-format).
+(Freetype also has a "2.14 fixed float" format but you don't need to know
+anything about this).
 
 
 

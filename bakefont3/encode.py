@@ -251,15 +251,16 @@ def glyphset(result, modeID):
 
         # horizontal left side bearing and top side bearing
         # positioning information relative to baseline
-        yield fp26_6(glyph.ftGlyph.metrics.horiBearingX)  # 4 bytes
-        yield fp26_6(glyph.ftGlyph.metrics.horiBearingY)  # 4 bytes
+        # NOTE!!! These are already FP26.6!!!
+        yield int32(glyph.ftGlyph.metrics.horiBearingX)  # 4 bytes
+        yield int32(glyph.ftGlyph.metrics.horiBearingY)  # 4 bytes
         # advance - how much to advance the pen by horizontally after drawing
-        yield fp26_6(glyph.ftGlyph.metrics.horiAdvance)  # 4 bytes
+        yield int32(glyph.ftGlyph.metrics.horiAdvance)  # 4 bytes
 
-        yield fp26_6(glyph.ftGlyph.metrics.vertBearingX)  # 4 bytes
-        yield fp26_6(glyph.ftGlyph.metrics.vertBearingY)  # 4 bytes
+        yield int32(glyph.ftGlyph.metrics.vertBearingX)  # 4 bytes
+        yield int32(glyph.ftGlyph.metrics.vertBearingY)  # 4 bytes
         # advance - how much to advance the pen by vertically after drawing
-        yield fp26_6(glyph.ftGlyph.metrics.vertAdvance)  # 4 bytes
+        yield int32(glyph.ftGlyph.metrics.vertAdvance)  # 4 bytes
 
 
 def kerning(result, modeID, setname, glyphset, cb):
@@ -299,8 +300,10 @@ def kerning(result, modeID, setname, glyphset, cb):
         if kerning.x or kerning_fine.x:
             yield uint32(indexL)
             yield uint32(indexR)
-            yield fp26_6(kerning.x)
-            yield fp26_6(kerning_fine.x)
+            yield int32(kerning.x) # NOTE already in FP26.6
+            yield int32(kerning_fine.x) # NOTE already in FP26.6
+
+            # TODO could probably use only one of these
 
 
 def notes(result):

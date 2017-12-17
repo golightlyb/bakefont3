@@ -31,17 +31,43 @@
 #include <stdbool.h>
 #include <stddef.h> // size_t
 #include <stdint.h>
+#include <math.h>
 
 
-// Fixed point 26.6 encoding
-// use BF3_DECODE_FP26((uint32_t) x) to get a result as a float
-// use BF3_ENCODE_FP26((float) x) to encode a float to FP26
+// Fixed point 26.6 encoding is used by freetype and bakefont3 for precise
+// floating point values with precision of 1/64pt.
+
+// use BF3_DECODE_FP26((int32_t) x) to get a FP26 value as a float value
+// use BF3_ENCODE_FP26((float) x) to encode a float value to a FP26 value
+
+// use BF3_DECODE_FP26_FLOOR((int32_t) x) to quickly get a FP26 value as an
+// integer value, truncating any floating point information (the effect of this
+// is to always round down). You might use this if you only ever use integer
+// font sizes, for example, and don't need to support fractional font sizes.
+
+// use BF3_DECODE_FP26_NEAREST((int32_t) x) to get a result as an integer,
+// rounded to the nearest integer (rounding away from 0 if exactly half way).
+
+// use BF3_DECODE_FP26_CEIL((int32_t) x, (bf3_fp26) tolerance) to get the
+// result as an integer rounded towards +/-ve infinity, with a bit of tolerance
+// where the value is rounded to the nearest integer instead. This is useful
+// for rounding up to the next pixel, except when the value is almost exact.
+// e.g.
+//     bf3_fp26 x = BF3_ENCODE_FP26(-0.171875)
+//     bf3_fp26 tolerance = BF3_ENCODE_FP26(12f/64f) // 0.1875
+//     int value = BF3_DECODE_FP26_CEIL(x, tolerance)
+
 
 typedef int32_t bf3_fp26;
 
-
 #define BF3_DECODE_FP26(x) ( ((float) (x)) / 64.0f )
 #define BF3_ENCODE_FP26(x) ((bf3_fp26) (x  * 64.0f))
+
+#define BF3_DECODE_FP26_NEAREST(x) ((int) lroundf(BF3_DECODE_FP26(x)))
+#define BF3_DECODE_FP26_CEIL(x, tolerance) BF3_DECODE_FP26_CEIL_impl(x, tolerance)
+
+int BF3_DECODE_FP26_CEIL_impl(bf3_fp26 x, bf3_fp26 tolerance);
+
 
 
 // The bf3_filelike structure holds a pointer to some FILE-like stream or
@@ -153,37 +179,50 @@ typedef struct bf3_metric bf3_metric;
 
 struct bf3_metric
 {
-        uint32_t codepoint;
-        
-        // pixel position of rasterised image in texture atlas
-        // relative to top-left
-        uint16_t tex_x;
-        uint16_t tex_y;
-        uint8_t  tex_z; // channel
-        
-        // size of the rasterised image in texture atlas
-        uint8_t  tex_w;
-        uint8_t  tex_h;
-        uint8_t  tex_d; // always 0 or 1; if none, no image
-        
-        // horizontal left side bearing
-        bf3_fp26 hbx;
-        // horizontal top side bearing
-        bf3_fp26 hby;
-        // horizontal advance
-        bf3_fp26 hadvance;
-        
-        // note - right side bearing
-        // = advance_width - left_side_bearing - tex_w
-        
-        // vertical left side bearing
-        bf3_fp26 vbx;
-        // vertical top side bearing
-        bf3_fp26 vby;
-        // vertical advance
-        bf3_fp26 vadvance;
+    uint32_t codepoint;
+    
+    // pixel position of rasterised image in texture atlas
+    // relative to top-left
+    uint16_t tex_x;
+    uint16_t tex_y;
+    uint8_t  tex_z; // channel
+    
+    // size of the rasterised image in texture atlas
+    uint8_t  tex_w;
+    uint8_t  tex_h;
+    uint8_t  tex_d; // always 0 or 1; if none, no image
+    
+    // horizontal left side bearing
+    bf3_fp26 hbx;
+    // horizontal top side bearing
+    bf3_fp26 hby;
+    // horizontal advance
+    bf3_fp26 hadvance;
+    
+    // note - right side bearing
+    // = advance_width - left_side_bearing - tex_w
+    
+    // vertical left side bearing
+    bf3_fp26 vbx;
+    // vertical top side bearing
+    bf3_fp26 vby;
+    // vertical advance
+    bf3_fp26 vadvance;
 };
 
+
+
+// The bf3_kpair structure describes kerning information for a pair of two
+// glyphs
+// see e.g. https://www.freetype.org/freetype2/docs/glyphs/glyphs-4.html
+
+typedef struct bf3_kpair bf3_kpair;
+
+struct bf3_kpair
+{
+    int16_t x;   // grid-fitted
+    bf3_fp26 xf; // "fine": not-grid fitted
+};
 
 
 // Get the size of the bf3 header to read
@@ -221,5 +260,10 @@ bool bf3_kerning_load(bf3_filelike *filelike, char *kerning, bf3_table *table);
 // Read font metrics for a given glyph codepoint from the buf `metrics`
 // previously filled by bf3_metrics_load.
 bool bf3_metric_get(bf3_metric *metric, const char *metrics, uint32_t codepoint);
+
+// Read kerning information metrics for a given codepoint pair from the buf
+// `kerning` previously filled by bf3_kerning_load.
+bool bf3_kpair_get(bf3_kpair *kpair, const char *kerning,
+    uint32_t codepoint_left, uint32_t codepoint_right);
 
 #endif // ifndef BAKEFONT3_H
