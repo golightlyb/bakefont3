@@ -23,6 +23,29 @@ loading that information.
     export RGBA, RGB, greyscale)
 * supports square and rectangle texture atlases of any size
 * metrics accurate up to 1/64th of a pixel (e.g. for supersampling)
+* small `.c` loader - no heavy dependencies in client software
+
+
+## Limitations ##
+
+Bakefont3 is great for efficiently rendering pixel-perfect text on the GPU,
+but only when the fonts, sizes and styles are known in advance.
+
+For very large text, consider using vector graphics instead.
+
+It takes many seconds or minutes for bakefont3 to generate and export data,
+depending on the number of fonts and characters to render.
+
+It is not ideal for rendering rotated text. You could get "okay" results by
+supersampling but it would be best to use freetype directly for this.
+
+Bakefont3 currently does not export vertical kerning information. This is
+easily achievable without breaking backwards compatibility. Please get in touch
+if you can help with this.
+
+Bakefont3 does not include a layout engine. It just exports the metrics that
+a layout engine would need. The example C program demonstrates a simple layout
+engine.
 
 
 ## Example Usage ##

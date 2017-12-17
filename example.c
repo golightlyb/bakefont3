@@ -1,9 +1,9 @@
 // Example program loading bakefont3 data and using it to display text
 
 // COMPILE:
-//     gcc -std=c99 example.c bakefont3.c -Wall -Wextra -o example
+//     gcc -std=c99 example.c bakefont3.c -Wall -Wextra -o example.bin
 // USAGE:
-//     example data.bf3 atlas.png
+//     ./example.bin example/test.bf3 example/test-rgba.png
 
 
 #include "bakefont3.h"
@@ -227,6 +227,17 @@ int main(int argc, char *argv[])
     uint32_t codepoint_a = (unsigned char) 'a';
     uint32_t codepoint_omega = 0x03A9; // Ω;
     
+    bf3_metric metric;
+    if (bf3_metric_get(&metric, metrics, codepoint_a))
+    {
+        printf("Found a!\n");
+    }
+    /*
+    if (bf3_metric_get(&metric, metrics, codepoint_omega))
+    {
+        printf("Found Ω!\n");
+    }
+     */
     
     free(kerning);
     free(metrics);

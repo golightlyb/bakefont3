@@ -146,6 +146,46 @@ struct bf3_table
 };
 
 
+// The bf3_metric structure describes how to render a single glyph
+// see e.g. https://www.freetype.org/freetype2/docs/glyphs/glyphs-3.html
+
+typedef struct bf3_metric bf3_metric;
+
+struct bf3_metric
+{
+        uint32_t codepoint;
+        
+        // pixel position of rasterised image in texture atlas
+        // relative to top-left
+        uint16_t tex_x;
+        uint16_t tex_y;
+        uint8_t  tex_z; // channel
+        
+        // size of the rasterised image in texture atlas
+        uint8_t  tex_w;
+        uint8_t  tex_h;
+        uint8_t  tex_d; // always 0 or 1; if none, no image
+        
+        // horizontal left side bearing
+        bf3_fp26 hbx;
+        // horizontal top side bearing
+        bf3_fp26 hby;
+        // horizontal advance
+        bf3_fp26 hadvance;
+        
+        // note - right side bearing
+        // = advance_width - left_side_bearing - tex_w
+        
+        // vertical left side bearing
+        bf3_fp26 vbx;
+        // vertical top side bearing
+        bf3_fp26 vby;
+        // vertical advance
+        bf3_fp26 vadvance;
+};
+
+
+
 // Get the size of the bf3 header to read
 size_t bf3_header_peek(bf3_filelike *filelike);
 
@@ -168,14 +208,18 @@ void bf3_mode_get(bf3_mode *mode, char *hdr, int index);
 // previously by `bf3_header_load`.
 void bf3_table_get(bf3_table *table, char *hdr, int index);
 
-// Read font metrics for a given table into a buf, `buf`, of at least size
+// Read font metrics for a given table into a buf, `metrics`, of at least size
 // `table->metrics_size`. Use a table structure initialised previously
 // by `bf3_table_get`.
 bool bf3_metrics_load(bf3_filelike *filelike, char *metrics, bf3_table *table);
 
-// Read kerning metrics for a given table into a buf, `buf`, of at least size
+// Read kerning metrics for a given table into a buf, `kerning`, of at least size
 // `table->kerning_size`. Use a table structure initialised previously
 // by `bf3_table_get`.
 bool bf3_kerning_load(bf3_filelike *filelike, char *kerning, bf3_table *table);
+
+// Read font metrics for a given glyph codepoint from the buf `metrics`
+// previously filled by bf3_metrics_load.
+bool bf3_metric_get(bf3_metric *metric, const char *metrics, uint32_t codepoint);
 
 #endif // ifndef BAKEFONT3_H

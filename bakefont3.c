@@ -194,7 +194,8 @@ bool bf3_metrics_load(bf3_filelike *filelike, char *metrics, bf3_table *table)
     
     if (0 != memcmp(metrics, "GSET", 4)) { goto fail; }
     
-    uint32_t num = (table->metrics_size - 4) / 40;
+    // patch over the SGET header with nmemb
+    uint32_t num = (table->metrics_size - 4) / 36;
     memcpy(metrics, &num, 4);
     
     return true;
@@ -213,6 +214,7 @@ bool bf3_kerning_load(bf3_filelike *filelike, char *kerning, bf3_table *table)
     
     if (0 != memcmp(kerning, "KERN", 4)) { goto fail; }
     
+    // patch over the KERN header with nmemb
     uint32_t num = (table->kerning_size - 4) / 16;
     memcpy(kerning, &num, 4);
     
@@ -220,4 +222,54 @@ bool bf3_kerning_load(bf3_filelike *filelike, char *kerning, bf3_table *table)
     
     fail:
         return false;
+}
+
+
+static void bf3_metric_decode(bf3_metric *metric, const char *buf)
+{
+    // the metric structure is tightly packed so this works
+    memcpy(metric, buf, 36);
+}
+
+#include <stdio.h>
+bool bf3_metric_get(bf3_metric *metric, const char *metrics, uint32_t codepoint)
+{
+    // read nmemb we stashed earlier
+    uint32_t nmemb;
+    memcpy(&nmemb, metrics, 4);
+
+    // for a record, n, where is the offset to its codepoint relative to the
+    // start of the metrics buffer?
+#   define RECORD(n) (4 + (36*(n)))
+    
+    // fo
+    
+    // binary search for a matching codepoint
+    size_t start = 0;
+    size_t pos   = nmemb / 2;
+    size_t end   = nmemb;
+    
+    while ((pos >= start) && (pos < end))
+    {
+        size_t offset = RECORD(pos);
+        int cmp = memcmp(&codepoint, metrics + offset, 4);
+        
+        uint32_t current;
+        memcpy(&current, metrics + offset, 4);
+        printf("Check [%d,%d,%d] for %u, got %u\n", (int) start, (int) pos, (int) end, codepoint, current);
+        
+        if (cmp == 0)
+        {
+            bf3_metric_decode(metric, metrics + offset);
+            return true;
+        }
+        else if (cmp < 0) { end = pos; }
+        else if (cmp > 0) { start = pos + 1; }
+        
+        pos = start + ((end - start) / 2);
+    }
+    
+    return false;
+    
+#   undef RECORD
 }

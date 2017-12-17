@@ -234,7 +234,7 @@ def glyphset(result, modeID):
     yield b"GSET"                       # r+0 | 4 | debugging marker
 
     # record - 36 bytes
-    for codepoint, glyph in glyphset.items():
+    for codepoint, glyph in sorted(glyphset.items()):
         # Unicode code point
         yield uint32(codepoint)  # 4 bytes
 
@@ -258,7 +258,7 @@ def glyphset(result, modeID):
 
         yield fp26_6(glyph.ftGlyph.metrics.vertBearingX)  # 4 bytes
         yield fp26_6(glyph.ftGlyph.metrics.vertBearingY)  # 4 bytes
-        # advance - how much to advance the pen by horizontally after drawing
+        # advance - how much to advance the pen by vertically after drawing
         yield fp26_6(glyph.ftGlyph.metrics.vertAdvance)  # 4 bytes
 
 
