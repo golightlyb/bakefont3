@@ -75,10 +75,10 @@ querying bakefont3 data.
 
 ### For generating fonts using bakefont3:
 
-    * Roboto and Roboto Mono fonts from [fonts.google.com](https://fonts.google.com/)
-    * Python3
-    * libfreetype
-    * Python3 modules Pillow, numpy, freetype-py
+* Roboto and Roboto Mono fonts (from [fonts.google.com](https://fonts.google.com/))
+* Arial font from Microsoft (search `msttcorefonts`)
+* Python3
+* Python3 modules Pillow, numpy, freetype-py
 
 Example:
 
@@ -87,8 +87,8 @@ Example:
 
 ### For the C example program:
 
-    * Maths: link with `-lm`
-    * a C compiler (e.g. gcc, clang)
+* Maths: link with `-lm`
+* a C compiler (e.g. gcc, clang)
 
 
 ## Useful notes ##
