@@ -283,7 +283,8 @@ int main(int argc, char *argv[])
     if (bf3_kpair_get(&kpair, kerning, codepoint_W, codepoint_period))
     {
         printf("Found ('W','.') kerning pair!\n");
-        printf("X offset: %d (%.2f)\n", kpair.x, BF3_DECODE_FP26(kpair.xf));
+        printf("X offset: %d (grid fit) or %.2f (no grid fit)\n",
+            kpair.x, BF3_DECODE_FP26(kpair.xf));
     }
     else
     {
@@ -293,7 +294,8 @@ int main(int argc, char *argv[])
     if (bf3_kpair_get(&kpair, kerning, codepoint_A, codepoint_V))
     {
         printf("Found ('A','V') kerning pair!\n");
-        printf("X offset: %d (%.2f)\n", kpair.x, BF3_DECODE_FP26(kpair.xf));
+        printf("X offset: %d (grid fit) or %.2f (no grid fit)\n",
+            kpair.x, BF3_DECODE_FP26(kpair.xf));
     }
     else
     {
