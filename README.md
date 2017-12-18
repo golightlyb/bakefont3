@@ -69,7 +69,7 @@ querying bakefont3 data.
     $ # Compile
     $ gcc -std=c99 example.c bakefont3.h bakefont3.c -lm -o example.bin
     # # Run
-    $ ./example test.bf3 test-rgba.png
+    $ ./example example/test.bf3 example/test-rgba.png
 
 
 ## Dependencies ##
