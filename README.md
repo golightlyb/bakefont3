@@ -27,6 +27,7 @@ loading that information.
 * for large text, vector graphics are better
 * not ideal for rotated text (decent results with supersampling?)
 * does not include a layout engine - just exports the metrics that one would use
+* does not support RGBA glyphs - e.g. full colour emojis
 
 Bakefont3 does not export vertical kerning information. This can
 easily be fixed - please get in touch if you can help.
@@ -112,9 +113,20 @@ This encodes a [Real number](https://en.wikipedia.org/wiki/Real_number) as a
 signed 32 bit integer. Divide by 64.0 to get the Real value. Or, multiply
 a Real value by 64.0 and cast to a signed 32 bit integer to encode it.
 
+One of the reasons these are used is because unlike floats, they compare
+precisely - e.g. a font size of 13.5pt can be identified exactly.
+
 (Freetype also has a "2.14 fixed float" format but you don't need to know
 anything about this).
 
+**Why use all four colour channels to bake the texture atlas?**
+
+If you are using the texture atlas on its own, you gain nothing by doing this
+and may as well just generate the greyscale version (bakefont3 can do that, too).
+
+However, you sometimes want to combine several textures - like the glyphs, GUI
+images, game graphics, etc. into one big RGBA texture as an optimisation to
+avoid texture switching on the GPU.
 
 
 ## COPYING ##
