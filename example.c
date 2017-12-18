@@ -242,6 +242,8 @@ int main(int argc, char *argv[])
     // we now have lookup tables that we can quickly index by a unicode code point
     
     // lets query a couple of glyph metrics...
+    // these tell us how to draw the glyph from the texture atlas
+    
     // (a function that returns code points from utf-8 would be useful)
     uint32_t codepoint_a = (unsigned char) 'a';
     uint32_t codepoint_omega = 0x03A9; // Ω;
@@ -270,6 +272,8 @@ int main(int argc, char *argv[])
     
     
     // lets query a couple of kerning pairs...
+    // these tell us how to adjust two characters so that they look nice
+    // when combined.
     
     // WWW. <- the dot moves closer to the W in some fonts
     uint32_t codepoint_W = (unsigned char) 'W';
