@@ -94,11 +94,12 @@ Example:
 ## Useful notes ##
 
 **When talking about font faces and glyphs, what do terms like ascent, descent,
-etc. mean?**
+kerning, etc. mean?**
 
 See [1](https://www.microsoft.com/typography/otspec/TTCH01.htm),
-[2](https://www.freetype.org/freetype2/docs/tutorial/step2.html)
-[3](https://www.freetype.org/freetype2/docs/glyphs/glyphs-3.html)
+[2](https://www.freetype.org/freetype2/docs/tutorial/step2.html),
+[3](https://www.freetype.org/freetype2/docs/glyphs/glyphs-3.html),
+[4](https://www.freetype.org/freetype2/docs/glyphs/glyphs-4.html)
 
 **Font sizes are given in pixels.**
 
