@@ -76,20 +76,30 @@ querying bakefont3 data.
 
 ### For generating fonts using bakefont3:
 
-* Roboto and Roboto Mono fonts (from [fonts.google.com](https://fonts.google.com/))
-* Arial font from Microsoft (search `msttcorefonts`)
-* Python3
-* Python3 modules Pillow, numpy, freetype-py
+* Python3 and modules Pillow, numpy, freetype-py
 
 Example:
 
-    sudo apt-get install libfreetype6
-    sudo pip3 install Pillow numpy freetype-py
+    $ sudo apt-get install libfreetype6
+    $ sudo pip3 install Pillow numpy freetype-py
+
+### For the Python example program:
+
+* Roboto and Roboto Mono fonts (from [fonts.google.com](https://fonts.google.com/))
+* Arial font from Microsoft (search `msttcorefonts`)
 
 ### For the C example program:
 
 * Maths: link with `-lm`
 * a C compiler (e.g. gcc, clang)
+
+### For the C/OpenGL example program:
+
+* You'll need libpng and libglfw
+
+Example:
+
+    $ sudo apt-get install libglfw3 libglfw3-dev libpng12-0 libpng12-dev
 
 
 ## Useful notes ##

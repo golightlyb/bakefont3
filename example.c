@@ -1,4 +1,4 @@
-// Example program loading bakefont3 data and using it to display text
+// Example program loading bakefont3 data
 
 // COMPILE:
 //     gcc -std=c99 example.c bakefont3.c -lm -Wall -Wextra -o example.bin
@@ -85,6 +85,8 @@ int main(int argc, char *argv[])
     // open the texture atlas
     FILE *fimage = fopen(argv[2], "rb");
     if (!fimage) { fprintf(stderr, "Could not open %s\n", argv[2]); return -1; }
+    // (this example doesn't actually use the texture)
+    fclose(fimage);
     
     // a simple structure that tells bakefont3 how to read the data
     // (bakefont3 doesn't care about the file system)
@@ -239,6 +241,9 @@ int main(int argc, char *argv[])
     if (!bf3_kerning_load(&data_reader, kerning, &table_sans16_all))
         { fprintf(stderr, "Error reading font kerning information\n"); return -1; }
     
+    // done with the underlying file now
+    fclose(fdata);
+    
     // we now have lookup tables that we can quickly index by a unicode code point
     
     // lets query a couple of glyph metrics...
@@ -310,8 +315,6 @@ int main(int argc, char *argv[])
     free(kerning);
     free(metrics);
     free(hdr);
-    fclose(fimage);
-    fclose(fdata);
 }
 
 
