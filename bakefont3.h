@@ -220,7 +220,7 @@ typedef struct bf3_kpair bf3_kpair;
 
 struct bf3_kpair
 {
-    int16_t x;   // grid-fitted
+    int32_t x;   // grid-fitted
     bf3_fp26 xf; // "fine": not-grid fitted
 };
 
