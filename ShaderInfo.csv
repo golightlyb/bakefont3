@@ -1,3 +1,0 @@
-﻿Pgm Name,Shader Type And Name,Shader Source File,Cycles,Avg Cycles,ALU/TEX (Inst),ALU/TEX (Cycles),Regs,LMem (Bytes),Float16,Float32,Slow Float32,Float64,Integer,Slow Integer,Interpolation,Tex,Read Generic,Read Thread Local,Read GPU Global,Read Attribute,Write Generic,Write Thread Local,Write GPU Global,Write Attribute,Flow Control,NOP
-282,VS - 280,PRG282-VS280.glsl,140,10,,,7,0,0,16,0,0,0,0,0,0,0,0,0,4,0,0,0,6,2,2
-282,FS - 281,PRG282-FS281.glsl,206,8,4,2.385981368870488,6,0,0,2,1,0,1,0,3,1,0,0,0,0,0,0,0,0,2,2
