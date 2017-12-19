@@ -71,7 +71,7 @@ static const char *fragment_shader = "\
  void main(void)\
  {\
      frag_color = texture(sample0, uv); \
-    frag_color = vec4(frag_color.x, 1.0, 1.0, 1.0); \
+    frag_color = vec4(frag_color.xyz, 1.0); \
  }\
 \n";
 
@@ -450,7 +450,8 @@ int main(int argc, char *argv[])
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // a buffer for uploading data
-    float tmp[max_vertexes * vertex_bytes];
+    float *tmp = malloc(max_vertexes * vertex_bytes);
+    assert(tmp);
 
     // convert utf8 into a Unicode string
     char string_utf8[(max_glyphs * 4) + 1];
@@ -479,8 +480,8 @@ int main(int argc, char *argv[])
         
         size_t vertexes = 0;
         
-        int xoffset = 30;
-        int yoffset = 50;
+        int xoffset = 20;
+        int yoffset = 40;
         float *p = tmp;
         
         // write a densely packed structure with information about the
@@ -509,7 +510,7 @@ int main(int argc, char *argv[])
             
             // triangle 1
             P = x0;
-            P = x0;
+            P = y0;
             P = u0;
             P = v0;
             
