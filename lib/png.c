@@ -116,7 +116,7 @@ bool read_png(image *img, FILE *fp)
     img->width  = (int) png_get_image_width(png_ptr, info_ptr);
     img->height = (int) png_get_image_height(png_ptr, info_ptr);
     img->rgba = malloc(img->width * img->height * 4);
-    
+
     // PNG has allocated rows for us.
     // Although this is less efficient, for ease of implementation lets
     // for now just copy this into our own structure.
@@ -129,7 +129,7 @@ bool read_png(image *img, FILE *fp)
         {
             for (int i = 0; i < 4; i++) // RGBA
             {
-                img->rgba[(y * img->width) + (x * 4)+ i] = row_pointers[y][(x * 4)+ i];
+                img->rgba[(y * img->width * 4) + (x * 4) + i] = row_pointers[y][(x * 4)+ i];
             }
         }
     }

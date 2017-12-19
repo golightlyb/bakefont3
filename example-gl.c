@@ -66,12 +66,15 @@ static const char *fragment_shader = "\
  uniform sampler2D sample0; \
  \
  in vec2 uv;\
+ in vec4 mask;\
+ in vec4 color;\
  out vec4 frag_color;\
  \
  void main(void)\
  {\
-     frag_color = texture(sample0, uv); \
-    frag_color = vec4(frag_color.xyz, 1.0); \
+    vec4 alpha = texture(sample0, uv) * mask; \
+    float opacity = min(1.0, alpha.x + alpha.y + alpha.z + alpha.w); \
+    frag_color = vec4(color.xyz, color.w * opacity); \
  }\
 \n";
 
@@ -83,12 +86,18 @@ static const char *vertex_shader = "\
  \
  in vec2 attrib_xy; \
  in vec2 attrib_uv; \
+ in vec4 attrib_mask; \
+ in vec4 attrib_color; \
  \
  out vec2 uv; \
+ out vec4 mask; \
+ out vec4 color; \
  \
  void main(void) \
  { \
      uv = attrib_uv; \
+     mask = attrib_mask; \
+     color = attrib_color; \
      gl_Position = vec4(attrib_xy, 0.0, 1.0) * projection_matrix; \
  } \
 \n";
@@ -101,10 +110,6 @@ GLuint new_texture2D(int width, int height, /*const */ unsigned char *pixel_data
     
     glGenTextures(1, name);
     glBindTexture(GL_TEXTURE_2D, name[0]);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     
     glTexImage2D
     (
@@ -398,6 +403,7 @@ int main(int argc, char *argv[])
 
     // Make the window's context current
     glfwMakeContextCurrent(window);
+    glClearColor(0.3, 0.3, 0.3, 1.0);
 
     // Upload the texture atlas
     GLuint atlas_texture = new_texture2D(atlas.width, atlas.height, atlas.rgba);
@@ -408,6 +414,10 @@ int main(int argc, char *argv[])
     // Make the texture active in texture unit 0
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, atlas_texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     
     // create a shader for drawing
     GLuint shader = make_shader(fragment_shader, strlen(fragment_shader),
@@ -419,15 +429,19 @@ int main(int argc, char *argv[])
     // get the shader uniform and attribute indexes
     GLint shader_attrib_xy = glGetAttribLocation(shader, "attrib_xy");
     GLint shader_attrib_uv = glGetAttribLocation(shader, "attrib_uv");
+    GLint shader_attrib_mask = glGetAttribLocation(shader, "attrib_mask");
+    GLint shader_attrib_color = glGetAttribLocation(shader, "attrib_color");
     GLint shader_uniform_sample0 = glGetUniformLocation(shader, "sample0");
     GLint shader_uniform_proj    = glGetUniformLocation(shader, "projection_matrix");
 
     // create a vbo for position and color data
     size_t max_vertexes = 512;
     size_t max_glyphs = max_vertexes / 6; // ~85
-    size_t vertex_bytes =  4 * sizeof(GL_FLOAT); // XYUV
+    size_t vertex_bytes =  6 * sizeof(GL_FLOAT); // XYUV, MASK, COLOUR
     GLuint vbo_xy = create_vbo(max_vertexes * 2);
     GLuint vbo_uv = create_vbo(max_vertexes * 2);
+    GLuint vbo_mask = create_vbo(max_vertexes);
+    GLuint vbo_color = create_vbo(max_vertexes);
 
     // a 2D projection
     GLfloat projection_matrix[16] =
@@ -476,6 +490,14 @@ int main(int argc, char *argv[])
     // loop until the user closes the window
     while (!glfwWindowShouldClose(window))
     {
+        // check for errors
+        while (true)
+        {
+            GLenum error = glGetError();
+            if (!error) { break; }
+            printf("glGetError: %d\n", (int) error);
+        }
+    
         glClear(GL_COLOR_BUFFER_BIT);
         
         size_t vertexes = 0;
@@ -488,57 +510,106 @@ int main(int argc, char *argv[])
         // triangles to draw (counter-clockwise triangles)
         for (size_t i = 0; i < string_utf32_len; i++)
         {
+            // look up the glyph metrics
             bf3_metric metric;
             uint32_t codepoint = string_utf32[i];
             if (!bf3_metric_get(&metric, metrics, codepoint)) { continue; }
             
+            // check for errors
+            if (!metric.tex_d)
+            {
+                xoffset += 20;
+                continue;
+            }
+            
+            // based on the layer (metric.tex_z),
+            // choose a mask colour that will extract from the channel we want
+            unsigned char mask[4] = {0, 0, 0, 0};
+            switch (metric.tex_z)
+            {
+                case 0: mask[0] = 255; break; // red
+                case 1: mask[1] = 255; break; // green
+                case 2: mask[2] = 255; break; // blue
+                case 3: mask[3] = 255; break; // alpha
+            }
+            
+            // compute x/y, size, and texture u/v
             float x0 = ((float) xoffset);
             float y0 = ((float) yoffset);
             float x1 = x0 + metric.tex_w;
             float y1 = y0 + metric.tex_h;
-            float u0 = metric.tex_x / ((float)info.width); // could be optimised
-            float v0 = metric.tex_y / ((float)info.height); // could be optimised
-            float u1 = (metric.tex_x + metric.tex_w) / ((float)info.width); // could be optimised
-            float v1 = (metric.tex_y + metric.tex_h) / ((float)info.height); // could be optimised
-            xoffset += metric.tex_w + 5;
+            float u0 = ((float) metric.tex_x) / ((float)info.width); // could be optimised
+            float v0 = ((float) metric.tex_y) / ((float)info.height); // could be optimised
+            float u1 = ((float) (metric.tex_x + metric.tex_w)) / ((float)info.width); // could be optimised
+            float v1 = ((float) (metric.tex_y + metric.tex_h)) / ((float)info.height); // could be optimised
             
-            //printf("%.2f %.2f %.2f %.2f %.d\n", x0, y0, x1, y1, xoffset);
+            // lets compute per-vertex colors (any linear gradient you like!)
+            unsigned char color_top[4] = {255, 255, 0, 255};
+            unsigned char color_bottom[4] = {255, 0, 255, 255};
+            
+            // move the cursor across
+            xoffset += metric.tex_w + 20;
+
+            
+            /*
+            printf("%d %d %d %d %d %d (%d, %d) => %.4f %.4f %.4f %.4f / %.4f %.4f %.4f %.4f\n",
+                (int) i, metric.tex_x, metric.tex_y, metric.tex_z, metric.tex_w, metric.tex_h,
+                info.width, info.height,
+                u0, v0, u1, v1,
+                x0, y0, x1, y1);
+                */
             
             // fill a quad (triangles go counter-clockwise)
             
-            #define P (*p++)
+            #define P(x) (*p++) = (x)
+            
+            // cheat and pack 4 bytes into a float to save space
+            #define B(x) memcpy(p++, &(x), 4);
             
             // triangle 1
-            P = x0;
-            P = y0;
-            P = u0;
-            P = v0;
+            P(x0);
+            P(y0);
+            P(u0);
+            P(v0);
+            B(mask);
+            B(color_top);
             
-            P = x0;
-            P = y1;
-            P = u0;
-            P = v1;
+            P(x0);
+            P(y1);
+            P(u0);
+            P(v1);
+            B(mask);
+            B(color_bottom);
             
-            P = x1;
-            P = y1;
-            P = u1;
-            P = v1;
+            P(x1);
+            P(y1);
+            P(u1);
+            P(v1);
+            B(mask);
+            B(color_bottom);
             
             // triangle 2
-            P = x0;
-            P = y0;
-            P = u0;
-            P = u0;
             
-            P = x1;
-            P = y1;
-            P = u1;
-            P = v1;
+            P(x0);
+            P(y0);
+            P(u0);
+            P(v0);
+            B(mask);
+            B(color_top);
             
-            P = x1;
-            P = y0;
-            P = u1;
-            P = v0;
+            P(x1);
+            P(y1);
+            P(u1);
+            P(v1);
+            B(mask);
+            B(color_bottom);
+            
+            P(x1);
+            P(y0);
+            P(u1);
+            P(v0);
+            B(mask);
+            B(color_top);
             
             vertexes += 6;
         }
@@ -556,6 +627,21 @@ int main(int argc, char *argv[])
         glVertexAttribPointer(shader_attrib_uv, 2, GL_FLOAT, false, vertex_bytes, (char *) (2 * sizeof(GL_FLOAT)));
         // components (UV), stride in bytes, and offset
         glBufferData(GL_ARRAY_BUFFER, vertexes * vertex_bytes, tmp, GL_DYNAMIC_DRAW);
+        
+        // upload mask information
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_mask);
+        glEnableVertexAttribArray(shader_attrib_mask);
+        glVertexAttribPointer(shader_attrib_mask, 4, GL_UNSIGNED_BYTE, true, vertex_bytes, (char *) (4 * sizeof(GL_FLOAT)));
+        // components (UV), stride in bytes, and offset
+        glBufferData(GL_ARRAY_BUFFER, vertexes * vertex_bytes, tmp, GL_DYNAMIC_DRAW);
+        
+        // upload colour information
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_color);
+        glEnableVertexAttribArray(shader_attrib_color);
+        glVertexAttribPointer(shader_attrib_color, 4, GL_UNSIGNED_BYTE, true, vertex_bytes, (char *) (5 * sizeof(GL_FLOAT)));
+        // components (UV), stride in bytes, and offset
+        glBufferData(GL_ARRAY_BUFFER, vertexes * vertex_bytes, tmp, GL_DYNAMIC_DRAW);
+        
         
         // make the texture active in texture unit 0
         glActiveTexture(GL_TEXTURE0);

@@ -228,6 +228,7 @@ struct bf3_kpair
 // convention - destination is always the first argument
 
 // Get the size of the bf3 header to read
+// Returns 0 if not a bf3 file.
 size_t bf3_header_peek(bf3_filelike *filelike);
 
 // Read the bf3 header into a buf, `hdr`, of at least size `header_size`.
