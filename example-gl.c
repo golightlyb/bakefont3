@@ -1,7 +1,7 @@
 // Example program loading bakefont3 data and using it to display text
 
 // COMPILE:
-//     gcc -std=c99 example-gl.c bakefont3.c lib/png.c lib/gl3w.c -lm -lglfw -lGL -lpng -ldl  -Wall -Wextra -o example-gl.bin
+//     gcc -std=c99 example-gl.c bakefont3.c lib/png.c lib/gl3w.c lib/utf8.c -lm -lglfw -lGL -lpng -ldl  -Wall -Wextra -o example-gl.bin
 // USAGE:
 //     ./example-gl.bin example/test.bf3 example/test-rgba.png
 
@@ -33,6 +33,30 @@ struct image
 bool check_if_png(FILE *fp);
 bool read_png(image *img, FILE *fp);
 
+// utf8_decode.h
+
+#define UTF8_END   -1
+#define UTF8_ERROR -2
+
+int  utf8_decode_at_byte();
+int  utf8_decode_at_character();
+void utf8_decode_init(const char *p, int length);
+int  utf8_decode_next();
+
+// simple utf8-aware strlen
+// not the fastest, but surely the simplest
+// from http://canonical.org/~kragen/strlen-utf8.html
+// (see also http://www.daemonology.net/blog/2008-06-05-faster-utf8-strlen.html)
+size_t utf8len(char *s)
+{
+  int i = 0, j = 0;
+  while (s[i]) {
+    if ((s[i] & 0xc0) != 0x80) j++;
+    i++;
+  }
+  return (size_t) j;
+}
+
 
 static const char *fragment_shader = "\
  \
@@ -47,7 +71,7 @@ static const char *fragment_shader = "\
  void main(void)\
  {\
      frag_color = texture(sample0, uv); \
-    frag_color = frag_color; \
+    frag_color = vec4(frag_color.x, 1.0, 1.0, 1.0); \
  }\
 \n";
 
@@ -65,7 +89,7 @@ static const char *vertex_shader = "\
  void main(void) \
  { \
      uv = attrib_uv; \
-     gl_Position = vec4(attrib_xy.x, attrib_xy.y, 0, 1) * projection_matrix; \
+     gl_Position = vec4(attrib_xy, 0.0, 1.0) * projection_matrix; \
  } \
 \n";
 
@@ -334,10 +358,10 @@ int main(int argc, char *argv[])
     if (!kerning) { fprintf(stderr, "Malloc error (kerning)\n"); return -1; }
     
     // load the metrics and kerning information
-    if (!bf3_metrics_load(&data_reader, metrics, &table_sans16_all))
+    if (!bf3_metrics_load(metrics, &data_reader, &table_sans16_all))
         { fprintf(stderr, "Error reading font metrics\n"); return -1; }
     
-    if (!bf3_kerning_load(&data_reader, kerning, &table_sans16_all))
+    if (!bf3_kerning_load(kerning, &data_reader, &table_sans16_all))
         { fprintf(stderr, "Error reading font kerning information\n"); return -1; }
     
     // done with the underlying file now
@@ -400,6 +424,7 @@ int main(int argc, char *argv[])
 
     // create a vbo for position and color data
     size_t max_vertexes = 512;
+    size_t max_glyphs = max_vertexes / 6; // ~85
     size_t vertex_bytes =  4 * sizeof(GL_FLOAT); // XYUV
     GLuint vbo_xy = create_vbo(max_vertexes * 2);
     GLuint vbo_uv = create_vbo(max_vertexes * 2);
@@ -407,10 +432,10 @@ int main(int argc, char *argv[])
     // a 2D projection
     GLfloat projection_matrix[16] =
     {
-        2.0,  0.0,  0.0,     -1.0,
-        0.0, -2.0,  0.0,      1.0,
-        0.0,  0.0, -2.0/1.0, -1.0,
-        0.0,  0.0,  0.0,      1.0
+        2.0f,  0.0f,  0.0f,      -1.0f,
+        0.0f, -2.0f,  0.0f,       1.0f,
+        0.0f,  0.0f, -2.0f/1.0f, -1.0f,
+        0.0f,  0.0f,  0.0f,       1.0f
     };
 
     projection_matrix[0] /= 640.0f; // window width
@@ -427,51 +452,117 @@ int main(int argc, char *argv[])
     // a buffer for uploading data
     float tmp[max_vertexes * vertex_bytes];
 
+    // convert utf8 into a Unicode string
+    char string_utf8[(max_glyphs * 4) + 1];
+    strcpy(string_utf8, "Hello, world!");
+    uint32_t string_utf32[max_glyphs];
+
+    size_t len = utf8len(string_utf8);
+    if (len > max_glyphs) { len = max_glyphs; }
+    utf8_decode_init(string_utf8, len);
+    size_t index = 0;
+    while (index < max_glyphs)
+    {
+        int scodepoint = utf8_decode_next();
+        if (scodepoint < 0) { break; }
+        
+        string_utf32[index] = (uint32_t) scodepoint;
+        
+        index++;
+    }
+    size_t string_utf32_len = index;
+
     // loop until the user closes the window
     while (!glfwWindowShouldClose(window))
     {
         glClear(GL_COLOR_BUFFER_BIT);
         
-        size_t vertexes = 3;
+        size_t vertexes = 0;
+        
+        int xoffset = 30;
+        int yoffset = 50;
+        float *p = tmp;
         
         // write a densely packed structure with information about the
         // triangles to draw (counter-clockwise triangles)
-        tmp[0] = 15.0; // tri0 x0
-        tmp[1] = 15.0; // tri0 y0
-        tmp[2] =  0.0; // tri0 U
-        tmp[3] =  0.0; // tri0 V
+        for (size_t i = 0; i < string_utf32_len; i++)
+        {
+            bf3_metric metric;
+            uint32_t codepoint = string_utf32[i];
+            if (!bf3_metric_get(&metric, metrics, codepoint)) { continue; }
+            
+            float x0 = ((float) xoffset);
+            float y0 = ((float) yoffset);
+            float x1 = x0 + metric.tex_w;
+            float y1 = y0 + metric.tex_h;
+            float u0 = metric.tex_x / ((float)info.width); // could be optimised
+            float v0 = metric.tex_y / ((float)info.height); // could be optimised
+            float u1 = (metric.tex_x + metric.tex_w) / ((float)info.width); // could be optimised
+            float v1 = (metric.tex_y + metric.tex_h) / ((float)info.height); // could be optimised
+            xoffset += metric.tex_w + 5;
+            
+            //printf("%.2f %.2f %.2f %.2f %.d\n", x0, y0, x1, y1, xoffset);
+            
+            // fill a quad (triangles go counter-clockwise)
+            
+            #define P (*p++)
+            
+            // triangle 1
+            P = x0;
+            P = x0;
+            P = u0;
+            P = v0;
+            
+            P = x0;
+            P = y1;
+            P = u0;
+            P = v1;
+            
+            P = x1;
+            P = y1;
+            P = u1;
+            P = v1;
+            
+            // triangle 2
+            P = x0;
+            P = y0;
+            P = u0;
+            P = u0;
+            
+            P = x1;
+            P = y1;
+            P = u1;
+            P = v1;
+            
+            P = x1;
+            P = y0;
+            P = u1;
+            P = v0;
+            
+            vertexes += 6;
+        }
         
-        tmp[4] = 15.0; // tri0 x0
-        tmp[5] = 300.0; // try0 y1
-        tmp[6] =  0.0; // tri0 U
-        tmp[7] =  1.0; // try0 V
-        
-        tmp[8] = 300.0; // tri0 x1
-        tmp[9] = 300.0; // try0 y1
-        tmp[10] =  1.0; // tri0 U
-        tmp[11] =  1.0; // try0 V
-        
-        
-        // XY coordinates
+        // upload XY coordinates
         glBindBuffer(GL_ARRAY_BUFFER, vbo_xy);
         glEnableVertexAttribArray(shader_attrib_xy);
         glVertexAttribPointer(shader_attrib_xy, 2, GL_FLOAT, false, vertex_bytes, (void *) 0);
         // components (XY), stride in bytes, and offset
         glBufferData(GL_ARRAY_BUFFER, vertexes * vertex_bytes, tmp, GL_DYNAMIC_DRAW);
         
-        // UV coordinates
+        // upload UV coordinates
         glBindBuffer(GL_ARRAY_BUFFER, vbo_uv);
         glEnableVertexAttribArray(shader_attrib_uv);
-        glVertexAttribPointer(shader_attrib_uv, 2, GL_FLOAT, false, vertex_bytes, (void *) (2 * sizeof(GL_FLOAT)));
+        glVertexAttribPointer(shader_attrib_uv, 2, GL_FLOAT, false, vertex_bytes, (char *) (2 * sizeof(GL_FLOAT)));
         // components (UV), stride in bytes, and offset
         glBufferData(GL_ARRAY_BUFFER, vertexes * vertex_bytes, tmp, GL_DYNAMIC_DRAW);
         
-        // Make the texture active in texture unit 0
+        // make the texture active in texture unit 0
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, atlas_texture);
         
+        // finally draw
         glDrawArrays(GL_TRIANGLES, 0, vertexes);
-
+        
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

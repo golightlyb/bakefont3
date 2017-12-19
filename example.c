@@ -235,10 +235,10 @@ int main(int argc, char *argv[])
     // printf("kerning offset %d size %d\n", table_sans16_all.kerning_offset, table_sans16_all.kerning_size);
     
     // load the metrics and kerning information
-    if (!bf3_metrics_load(&data_reader, metrics, &table_sans16_all))
+    if (!bf3_metrics_load(metrics, &data_reader, &table_sans16_all))
         { fprintf(stderr, "Error reading font metrics\n"); return -1; }
     
-    if (!bf3_kerning_load(&data_reader, kerning, &table_sans16_all))
+    if (!bf3_kerning_load(kerning, &data_reader, &table_sans16_all))
         { fprintf(stderr, "Error reading font kerning information\n"); return -1; }
     
     // done with the underlying file now
@@ -292,7 +292,7 @@ int main(int argc, char *argv[])
     if (bf3_kpair_get(&kpair, kerning, codepoint_W, codepoint_period))
     {
         printf("Found ('W','.') kerning pair!\n");
-        printf("X offset: %d (grid fit) or %.2f (no grid fit)\n",
+        printf("X offset: %d (grid fit) or %.2f (without grid fit)\n",
             kpair.x, BF3_DECODE_FP26(kpair.xf));
     }
     else
@@ -303,7 +303,7 @@ int main(int argc, char *argv[])
     if (bf3_kpair_get(&kpair, kerning, codepoint_A, codepoint_V))
     {
         printf("Found ('A','V') kerning pair!\n");
-        printf("X offset: %d (grid fit) or %.2f (no grid fit)\n",
+        printf("X offset: %d (grid fit) or %.2f (without grid fit)\n",
             kpair.x, BF3_DECODE_FP26(kpair.xf));
     }
     else

@@ -200,7 +200,7 @@ void bf3_table_get(bf3_table *table, char *buf, int index)
 }
 
 
-bool bf3_metrics_load(bf3_filelike *filelike, char *metrics, bf3_table *table)
+bool bf3_metrics_load(char *metrics, bf3_filelike *filelike, bf3_table *table)
 {
     if (table->metrics_size < 4) { goto fail; }
     
@@ -220,7 +220,7 @@ bool bf3_metrics_load(bf3_filelike *filelike, char *metrics, bf3_table *table)
 }
 
 
-bool bf3_kerning_load(bf3_filelike *filelike, char *kerning, bf3_table *table)
+bool bf3_kerning_load(char *kerning, bf3_filelike *filelike, bf3_table *table)
 {
     if (table->kerning_size < 4) { goto fail; }
     

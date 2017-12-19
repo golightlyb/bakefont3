@@ -225,6 +225,8 @@ struct bf3_kpair
 };
 
 
+// convention - destination is always the first argument
+
 // Get the size of the bf3 header to read
 size_t bf3_header_peek(bf3_filelike *filelike);
 
@@ -250,12 +252,12 @@ void bf3_table_get(bf3_table *table, char *hdr, int index);
 // Read font metrics for a given table into a buf, `metrics`, of at least size
 // `table->metrics_size`. Use a table structure initialised previously
 // by `bf3_table_get`.
-bool bf3_metrics_load(bf3_filelike *filelike, char *metrics, bf3_table *table);
+bool bf3_metrics_load(char *metrics, bf3_filelike *filelike,bf3_table *table);
 
 // Read kerning metrics for a given table into a buf, `kerning`, of at least size
 // `table->kerning_size`. Use a table structure initialised previously
 // by `bf3_table_get`.
-bool bf3_kerning_load(bf3_filelike *filelike, char *kerning, bf3_table *table);
+bool bf3_kerning_load(char *kerning, bf3_filelike *filelike, bf3_table *table);
 
 // Read font metrics for a given glyph codepoint from the buf `metrics`
 // previously filled by bf3_metrics_load.
