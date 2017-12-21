@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
     // Iterate through the fonts table.
     // and let's look for a font named "Sans"
     // (please edit this line if you have given the fonts different names)
-    const char *wanted_font = "Sans Bold";
+    const char *wanted_font = "Sans";
     bf3_font font_sans;
     found = false;
     
@@ -544,12 +544,11 @@ int main(int argc, char *argv[])
                 if (bf3_kpair_get(&kpair, kerning, last_codepoint, codepoint))
                 {
                     xkern = kpair.x;
-                    printf("xkern: %d\n", xkern);
                 }
             }
             
             // compute x/y, size, and texture u/v
-            float x0 = ((float) xoffset + lsb + bitmap_left + xkern);
+            float x0 = ((float) xoffset + lsb + xkern);
             float y0 = ((float) yoffset - tsb); // realtive to baseline
             float x1 = x0 + metric.tex_w;
             float y1 = y0 + metric.tex_h;
@@ -563,7 +562,7 @@ int main(int argc, char *argv[])
             unsigned char color_bottom[4] = {255, 0, 255, 255};
             
             // move the cursor across
-            xoffset += advance + xkern; // still use xkern here???
+            xoffset += advance + xkern;
 
             
             /*
