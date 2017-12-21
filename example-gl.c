@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
     // Iterate through the fonts table.
     // and let's look for a font named "Sans"
     // (please edit this line if you have given the fonts different names)
-    const char *wanted_font = "Sans";
+    const char *wanted_font = "Sans Bold";
     bf3_font font_sans;
     found = false;
     
@@ -493,6 +493,7 @@ int main(int argc, char *argv[])
         
         int xoffset = 20;
         int yoffset = 20;
+        int wordspacing = 6;
         
         // get the lineheight and round up to the nearest pixel
         int lineheight = BF3_DECODE_FP26_NEAREST(mode_sans16.lineheight);
@@ -513,7 +514,7 @@ int main(int argc, char *argv[])
             if (!bf3_metric_get(&metric, metrics, codepoint)) { continue; }
             
             // nothing to render? e.g. space
-            if (!metric.tex_d) { xoffset += 12; continue; }
+            if (!metric.tex_d) { xoffset += wordspacing; continue; }
             
             // based on the layer (metric.tex_z),
             // choose a mask colour that will extract from the channel we want
@@ -536,11 +537,14 @@ int main(int argc, char *argv[])
             int bitmap_left = metric.bitmap_left;
             int bitmap_top = metric.bitmap_top;
             
+            // kerning
             int xkern = 0;
-            if (i > 0)
+            if (i > 0) // don't kern the first letter
             {
                 uint32_t last_codepoint = string_utf32[i-1];
                 bf3_kpair kpair;
+                
+                // not all fonts have kerning information
                 if (bf3_kpair_get(&kpair, kerning, last_codepoint, codepoint))
                 {
                     xkern = kpair.x;
