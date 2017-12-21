@@ -200,7 +200,7 @@ def index(result, startingOffset, cb):
         # o +2 |  2 | RESERVED
         # o +4 |  4 | absolute byte offset of glyph metrics data
         # o +8 |  4 | byte size of glyph metrics data
-        #             (subtract 4, divide by 36 to get number of entries)
+        #             (subtract 4, divide by 40 to get number of entries)
         # o+12 |  4 | absolute byte offset of glyph kerning data
         # o+16 |  4 | byte size of glyph kerning data
         #             (subtract 4, divide by 16 to get number of entries)
@@ -233,7 +233,7 @@ def glyphset(result, modeID):
     # GLYPH SET HEADER - 4 bytes
     yield b"GSET"                       # r+0 | 4 | debugging marker
 
-    # record - 36 bytes
+    # record - 40 bytes
     for codepoint, glyph in sorted(glyphset.items()):
         # Unicode code point
         yield uint32(codepoint)  # 4 bytes
@@ -249,18 +249,21 @@ def glyphset(result, modeID):
         yield uint8(glyph.depth)  # 1 byte (always 0 or 1)
         assert 0 <= glyph.depth <= 1
 
+        yield int16(glyph.bitmap_left); # 2 byte
+        yield int16(glyph.bitmap_top);  # 2 byte
+
         # horizontal left side bearing and top side bearing
         # positioning information relative to baseline
         # NOTE!!! These are already FP26.6!!!
-        yield int32(glyph.ftGlyph.metrics.horiBearingX)  # 4 bytes
-        yield int32(glyph.ftGlyph.metrics.horiBearingY)  # 4 bytes
+        yield int32(glyph.horiBearingX)  # 4 bytes
+        yield int32(glyph.horiBearingY)  # 4 bytes
         # advance - how much to advance the pen by horizontally after drawing
-        yield int32(glyph.ftGlyph.metrics.horiAdvance)  # 4 bytes
+        yield int32(glyph.horiAdvance)  # 4 bytes
 
-        yield int32(glyph.ftGlyph.metrics.vertBearingX)  # 4 bytes
-        yield int32(glyph.ftGlyph.metrics.vertBearingY)  # 4 bytes
+        yield int32(glyph.vertBearingX)  # 4 bytes
+        yield int32(glyph.vertBearingY)  # 4 bytes
         # advance - how much to advance the pen by vertically after drawing
-        yield int32(glyph.ftGlyph.metrics.vertAdvance)  # 4 bytes
+        yield int32(glyph.vertAdvance)  # 4 bytes
 
 
 def kerning(result, modeID, setname, glyphset, cb):

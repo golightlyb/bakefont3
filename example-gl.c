@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
     // Iterate through the fonts table.
     // and let's look for a font named "Sans"
     // (please edit this line if you have given the fonts different names)
-    const char *wanted_font = "Sans";
+    const char *wanted_font = "Sans Bold";
     bf3_font font_sans;
     found = false;
     
@@ -374,18 +374,7 @@ int main(int argc, char *argv[])
     
     // we now have lookup tables that we can quickly index by a unicode code point
     
-
-    // uint32_t codepoint_a = (unsigned char) 'a';
-    
-    //bf3_metric metric;
-    //if (bf3_metric_get(&metric, metrics, codepoint_a))
-    
-    // WWW. <- the dot moves closer to the W in some fonts
-    // uint32_t codepoint_W = (unsigned char) 'W';
-    
-    //bf3_kpair kpair;
-    //if (bf3_kpair_get(&kpair, kerning, codepoint_W, codepoint_period))
-
+    // Lets move onto graphics...
     gl3wInit();
 
     GLFWwindow* window;
@@ -469,7 +458,7 @@ int main(int argc, char *argv[])
 
     // convert utf8 into a Unicode string
     char string_utf8[(max_glyphs * 4) + 1];
-    strcpy(string_utf8, "Hello, world!");
+    strcpy(string_utf8, "Hello, world!\nThis is the Bakefont 3 test!\nDAVE DOVE www.example.org");
     uint32_t string_utf32[max_glyphs];
 
     size_t len = utf8len(string_utf8);
@@ -503,7 +492,12 @@ int main(int argc, char *argv[])
         size_t vertexes = 0;
         
         int xoffset = 20;
-        int yoffset = 40;
+        int yoffset = 20;
+        
+        // get the lineheight and round up to the nearest pixel
+        int lineheight = BF3_DECODE_FP26_NEAREST(mode_sans16.lineheight);
+        yoffset += lineheight;
+        
         float *p = tmp;
         
         // write a densely packed structure with information about the
@@ -513,14 +507,13 @@ int main(int argc, char *argv[])
             // look up the glyph metrics
             bf3_metric metric;
             uint32_t codepoint = string_utf32[i];
+            
+            if (codepoint == '\n') { yoffset += lineheight; xoffset = 20; continue; }
+            
             if (!bf3_metric_get(&metric, metrics, codepoint)) { continue; }
             
-            // check for errors
-            if (!metric.tex_d)
-            {
-                xoffset += 20;
-                continue;
-            }
+            // nothing to render? e.g. space
+            if (!metric.tex_d) { xoffset += 12; continue; }
             
             // based on the layer (metric.tex_z),
             // choose a mask colour that will extract from the channel we want
@@ -533,9 +526,31 @@ int main(int argc, char *argv[])
                 case 3: mask[3] = 255; break; // alpha
             }
             
+            // layout - see
+            // https://www.freetype.org/freetype2/docs/glyphs/glyphs-3.html
+            // right side bearing = advance_width - left_side_bearing - (xMax-xMin)
+            int advance = BF3_DECODE_FP26_NEAREST(metric.hadvance);
+            int lsb = BF3_DECODE_FP26_NEAREST(metric.hbx);
+            //int rsb = advance - lsb - metric.tex_w;
+            int tsb = BF3_DECODE_FP26_NEAREST(metric.hby);
+            int bitmap_left = metric.bitmap_left;
+            int bitmap_top = metric.bitmap_top;
+            
+            int xkern = 0;
+            if (i > 0)
+            {
+                uint32_t last_codepoint = string_utf32[i-1];
+                bf3_kpair kpair;
+                if (bf3_kpair_get(&kpair, kerning, last_codepoint, codepoint))
+                {
+                    xkern = kpair.x;
+                    printf("xkern: %d\n", xkern);
+                }
+            }
+            
             // compute x/y, size, and texture u/v
-            float x0 = ((float) xoffset);
-            float y0 = ((float) yoffset);
+            float x0 = ((float) xoffset + lsb + bitmap_left + xkern);
+            float y0 = ((float) yoffset - tsb); // realtive to baseline
             float x1 = x0 + metric.tex_w;
             float y1 = y0 + metric.tex_h;
             float u0 = ((float) metric.tex_x) / ((float)info.width); // could be optimised
@@ -548,7 +563,7 @@ int main(int argc, char *argv[])
             unsigned char color_bottom[4] = {255, 0, 255, 255};
             
             // move the cursor across
-            xoffset += metric.tex_w + 20;
+            xoffset += advance + xkern; // still use xkern here???
 
             
             /*

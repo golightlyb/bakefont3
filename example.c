@@ -64,6 +64,7 @@ void print_metric_info(bf3_metric *metric)
     printf("\tVertical left side bearing: %.2f\n",    BF3_DECODE_FP26(metric->vbx));
     printf("\tVertical top side bearing: %.2f\n",     BF3_DECODE_FP26(metric->vby));
     printf("\tVertical advance: %.2f\n",              BF3_DECODE_FP26(metric->vadvance));
+    printf("\tBitmap left, top: %d, %d\n",            metric->bitmap_left, metric->bitmap_top);
 }
 
 

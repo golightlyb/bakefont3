@@ -65,8 +65,10 @@ typedef int32_t bf3_fp26;
 
 #define BF3_DECODE_FP26_NEAREST(x) ((int) lroundf(BF3_DECODE_FP26(x)))
 #define BF3_DECODE_FP26_CEIL(x, tolerance) BF3_DECODE_FP26_CEIL_impl(x, tolerance)
+#define BF3_DECODE_FP26_FLOOR(x, tolerance) BF3_DECODE_FP26_FLOOR_impl(x, tolerance)
 
 int BF3_DECODE_FP26_CEIL_impl(bf3_fp26 x, bf3_fp26 tolerance);
+int BF3_DECODE_FP26_FLOOR_impl(bf3_fp26 x, bf3_fp26 tolerance);
 
 
 
@@ -191,6 +193,10 @@ struct bf3_metric
     uint8_t  tex_w;
     uint8_t  tex_h;
     uint8_t  tex_d; // always 0 or 1; if none, no image
+    
+    // handles "ascending" and "descending" parts in pixels
+    int16_t bitmap_left;
+    int16_t bitmap_top; // upwards y +ve, downwards -ve
     
     // horizontal left side bearing
     bf3_fp26 hbx;

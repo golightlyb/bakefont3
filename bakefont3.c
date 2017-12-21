@@ -50,6 +50,23 @@ int BF3_DECODE_FP26_CEIL_impl(bf3_fp26 x, bf3_fp26 tolerance)
 }
 
 
+// As above, but rounds towards zero
+int BF3_DECODE_FP26_FLOOR_impl(bf3_fp26 x, bf3_fp26 tolerance)
+{
+    // TODO (PERF) this could be clever enough to operate on the integers
+    
+    float fx = BF3_DECODE_FP26(x);
+    float ftolerance = BF3_DECODE_FP26(tolerance);
+    ftolerance = copysignf(ftolerance, fx);
+
+    float sgn_floor = copysignf(0.5f, fx); // round towards +/-ve infinity
+    
+    float result = (fx + ftolerance - sgn_floor);
+    return (int) lround(result);
+}
+
+
+
 size_t bf3_header_peek(bf3_filelike *filelike)
 {
     // HEADER - 24 byte block
@@ -239,7 +256,7 @@ bool bf3_metrics_load(char *metrics, bf3_filelike *filelike, bf3_table *table)
     if (0 != memcmp(metrics, "GSET", 4)) { goto fail; }
     
     // patch over the SGET header with nmemb
-    uint32_t num = (table->metrics_size - 4) / 36;
+    uint32_t num = (table->metrics_size - 4) / 40;
     memcpy(metrics, &num, 4);
     
     return true;
@@ -272,7 +289,7 @@ bool bf3_kerning_load(char *kerning, bf3_filelike *filelike, bf3_table *table)
 static void bf3_metric_decode(bf3_metric *metric, const char *buf)
 {
     // the metric structure is tightly packed so this works
-    memcpy(metric, buf, 36);
+    memcpy(metric, buf, 40);
 }
 
 
@@ -284,7 +301,7 @@ bool bf3_metric_get(bf3_metric *metric, const char *metrics, uint32_t codepoint)
 
     // for a record, n, where is the offset to its codepoint relative to the
     // start of the metrics buffer?
-#   define RECORD(n) (4 + (36*(n)))
+#   define RECORD(n) (4 + (40*(n)))
     
     // binary search for a matching codepoint
     size_t start = 0;

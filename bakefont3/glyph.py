@@ -2,10 +2,15 @@ import bakefont3 as bf3
 from PIL import Image
 import numpy as np
 import freetype
+import copy
 
 
 class Render(bf3.Cube):
-    __slots__ = ['image', 'ftGlyph']
+    __slots__ = [
+        'image', 'bitmap_left', 'bitmap_top',
+        'horiBearingX', 'horiBearingY', 'horiAdvance',
+        'vertBearingX', 'vertBearingY', 'vertAdvance'
+    ]
 
     def __init__(self, ftFace, codepoint, antialias=True):
 
@@ -37,13 +42,11 @@ class Render(bf3.Cube):
                         pixel = src[x + (y * pitch)]
                         arr[y, x] = pixel
             else:
-                print(pitch)
                 for y in range(height):
                     for x in range(width):
                         index = int(x/8) + (y * pitch)
                         pixel = src[index]
                         mask = 0x1 << (7 - (x % 8))
-                        print("%d, %d, %d, %d, %d" % (x, index, pixel, mask, pixel & mask))
                         pixel &= mask
                         if pixel: arr[y, x] = 255
 
@@ -53,7 +56,15 @@ class Render(bf3.Cube):
             super().__init__(0, 0, 0, 0, 0, 0)
             self.image = None
 
-        self.ftGlyph = ftFace.glyph
+        # get bitmap_*, metrics, etc
+        self.bitmap_left  = glyph.bitmap_left
+        self.bitmap_top   = glyph.bitmap_top
+        self.horiBearingX = glyph.metrics.horiBearingX
+        self.horiBearingY = glyph.metrics.horiBearingY
+        self.horiAdvance  = glyph.metrics.horiAdvance
+        self.vertBearingX = glyph.metrics.vertBearingX
+        self.vertBearingY = glyph.metrics.vertBearingY
+        self.vertAdvance  = glyph.metrics.vertAdvance
 
 
 class Glyph(bf3.Cube):
