@@ -4,6 +4,9 @@
 atlas and exporting metrics and kerning information, and a C library for
 loading that information.
 
+An included example program shows how Bakefont3 can be used for fast &
+high-quality OpenGL text rendering.
+
 **Pack glyphs efficiently into a texture atlas**  
 (using example-generate.py)
 
