@@ -152,10 +152,12 @@ See [1](https://www.microsoft.com/typography/otspec/TTCH01.htm),
 [3](https://www.freetype.org/freetype2/docs/glyphs/glyphs-3.html),
 [4](https://www.freetype.org/freetype2/docs/glyphs/glyphs-4.html)
 
+
 **Font sizes are given in pixels.**
 
 Typographic dpi is always 72. At 72ppi, 1pt == 1px.
 Convert as necessary for different devices.
+
 
 **What is the "26.6 fixed float" format?**
 
@@ -169,6 +171,7 @@ precisely - e.g. a font size of 13.5pt can be identified exactly.
 (Freetype also has a "2.14 fixed float" format but you don't need to know
 anything about this).
 
+
 **Why use all four colour channels to bake the texture atlas?**
 
 If you are using the texture atlas on its own, you gain nothing by doing this
@@ -178,8 +181,42 @@ However, you sometimes want to combine several textures - like the glyphs, GUI
 images, game graphics, etc. into one big RGBA texture as an optimisation to
 avoid texture switching on the GPU.
 
+For example, you might extend your text rendering code to draw full-colour
+icons and emojis aligned with your text in the same batch.
+
+
+## Copyright Status of Rasterised Glyphs ##
+
+This does depend: copyright law in the U.S protects the font, but not the
+typeface. In Europe, the typeface is usually protected.
+
+The safest and most ethical way to handle this is to think of Bakefont3 as
+something that creates a derived work. Copyrighted data goes in, copyrighted
+data comes out.
+
+That means that the output of a Bakefont3 program should inherit the same
+copyright and license as the input. In the case of multiple inputs by different
+authors, the output shares all these copyrights and licenses. The licenses
+must not conflict.
+
+Most open source fonts share the same one or two permissive licenses
+([fonts.google.com](fonts.google.com) is a great place for this), so this
+is usually quite simple in practice.
+
+It's also worth knowing that many open source font licenses say that you can't
+use the same name for a derived work. Bakefont3 by design makes it easy to use
+your own generic names for fonts (it's also fine to say something like
+"My Font based on Original Font").
+
 
 ## COPYING ##
+
+Bakefont3 is free and open source software.
+
+Did you publish software that uses Bakefont3? Did it save you time? Did it
+add value to your software?
+[Consider supporting the author](https://www.patreon.com/golightlyb)
+
 
     bakefont3
 
