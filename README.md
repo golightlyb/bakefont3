@@ -4,19 +4,27 @@
 atlas and exporting metrics and kerning information, and a C library for
 loading that information.
 
-**Example bakefont3 generated texture atlases**  
+**Pack glyphs efficiently into a texture atlas**  
 
 ![Example bakefont3 generated texture atlases](./docs/example.png)
 
 
-**Example bakefont3 kerning information (as rendered by example-gl.c)**
+**Make use of kerning information** (based on example-gl.c)
 
 ![Example using bakefont3 kerning information](./docs/kern.png)
 
 
-**Example bakefont3 handwriting font (realtime rendering using example-gl.c)**
+**Use any beautiful truetype font you want**  
+(realtime rendering using example-gl.c)
 
 ![Example bakefont3 handwriting font](./docs/handwriting.png)
+
+
+**Support any language and locale with full unicode support**  
+(realtime rendering using example-gl.c; depends on font support)
+
+![Example bakefont3 Unicode support](./docs/unicode.png)
+
 
 
 ## Features ##
