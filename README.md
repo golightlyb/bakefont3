@@ -27,6 +27,7 @@ high-quality OpenGL text rendering.
 
 **Support any language and locale with full unicode support**  
 (realtime rendering using example-gl.c; depends on font support)
+(only partial support for vertical writing in East Asian scripts - see limitations if you can help)
 
 ![Example bakefont3 Unicode support](./docs/unicode.png)
 
