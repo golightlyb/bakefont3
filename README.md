@@ -214,8 +214,8 @@ your own generic names for fonts (it's also fine to say something like
 Bakefont3 is free and open source software.
 
 Did you publish software that uses Bakefont3? Did it save you time? Did it
-add value to your software?
-[Consider supporting the author](https://www.patreon.com/golightlyb)
+add value to your software? If so, please consider 
+[supporting the author](https://www.patreon.com/golightlyb).
 
 
     bakefont3
