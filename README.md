@@ -4,7 +4,11 @@
 atlas and exporting metrics and kerning information, and a C library for
 loading that information.
 
-![Example](./docs/example.png)
+![Example bakefont3 generated texture atlases](./docs/example.png)
+
+![Example bakefont3 kerning information](./docs/kern.png)
+
+![Example bakefont3 handwriting font](./docs/handwriting.png)
 
 
 ## Features ##
@@ -15,11 +19,11 @@ loading that information.
 * efficient packing to reduce physical texture size
 * can use all four colour channels to share space with other textures (can
     export RGBA, RGB, greyscale)
+* suitable for efficient real-time rendering using OpenGL shaders
 * supports square and rectangle texture atlases of any size
 * metrics accurate up to 1/64th of a pixel (e.g. for supersampling)
 * small `.c` loader - no heavy dependencies in client software
 * pixel-perfect results for even the smallest text
-
 
 ## Limitations ##
 
@@ -27,6 +31,7 @@ loading that information.
 * for large text, vector graphics are better
 * not ideal for rotated text (decent results with supersampling?)
 * does not include a layout engine - just exports the metrics that one would use
+    (but see example simple layout in `example-gl.c`)
 * does not support RGBA glyphs - e.g. full colour emojis
 
 Bakefont3 does not export vertical kerning information. This can
@@ -69,7 +74,22 @@ querying bakefont3 data.
     $ # Compile
     $ gcc -std=c99 example.c bakefont3.h bakefont3.c -lm -o example.bin
     # # Run
-    $ ./example example/test.bf3 example/test-rgba.png
+    $ ./example.bin example/test.bf3 example/test-rgba.png
+
+
+### Render text with bakefont3 ###
+
+A sample program, `example-gl.c` is provided. You may like to edit it to
+change the font data it tries to load.
+
+`bakefont3.h` and `bakefont3.c` are an example interface for loading and
+querying bakefont3 data.
+
+    $ # Compile
+    $ gcc -std=c99 example-gl.c bakefont3.c lib/png.c lib/gl3w.c lib/utf8.c -lm -lglfw -lGL -lpng -ldl  -Wall -Wextra -o example-gl.bin
+    # # Run
+    $ ./example-gl.bin example/test.bf3 example/test-rgba.png
+
 
 
 ## Dependencies ##
@@ -95,7 +115,7 @@ Example:
 
 ### For the C/OpenGL example program:
 
-* You'll need libpng and libglfw
+* You will also need libpng and libglfw
 
 Example:
 
