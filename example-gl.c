@@ -424,7 +424,7 @@ int main(int argc, char *argv[])
     GLint shader_uniform_proj    = glGetUniformLocation(shader, "projection_matrix");
 
     // create a vbo for position and color data
-    size_t max_vertexes = 512;
+    size_t max_vertexes = 16 * 1024;
     size_t max_glyphs = max_vertexes / 6; // ~85
     size_t vertex_bytes =  6 * sizeof(GL_FLOAT); // XYUV, MASK, COLOUR
     GLuint vbo_xy = create_vbo(max_vertexes * 2);
@@ -458,10 +458,10 @@ int main(int argc, char *argv[])
 
     // convert utf8 into a Unicode string
     char string_utf8[(max_glyphs * 4) + 1];
-    strcpy(string_utf8, "Hello, world!\nThis is the Bakefont 3 test!\nDAVE DOVE www.example.org");
+    strcpy(string_utf8, "Hello, world!\nThis is the Bakefont 3 test!\nDAVE DOVE www.example.org\nGBP £ Euro €\nWelsh: Ga i fynd i'r tŷ bach os gwelwch yn dda?");
     uint32_t string_utf32[max_glyphs];
 
-    size_t len = utf8len(string_utf8);
+    size_t len = strlen(string_utf8);
     if (len > max_glyphs) { len = max_glyphs; }
     utf8_decode_init(string_utf8, len);
     size_t index = 0;
