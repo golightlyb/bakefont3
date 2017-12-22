@@ -5,11 +5,13 @@ atlas and exporting metrics and kerning information, and a C library for
 loading that information.
 
 **Pack glyphs efficiently into a texture atlas**  
+(using ./example-generate.py)
 
 ![Example bakefont3 generated texture atlases](./docs/example.png)
 
 
-**Make use of kerning information** (based on example-gl.c)
+**Make use of kerning information**  
+(based on example-gl.c)
 
 ![Example using bakefont3 kerning information](./docs/kern.png)
 
