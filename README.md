@@ -5,13 +5,17 @@ atlas and exporting metrics and kerning information, and a C library for
 loading that information.
 
 ![Example bakefont3 generated texture atlases](./docs/example.png)
-**Example bakefont3 generated texture atlases**
+
+**Example bakefont3 generated texture atlases**  
+
 
 ![Example using bakefont3 kerning information](./docs/kern.png)
-**Example bakefont3 kerning information (as rendered by example-gl.c)**
+**Example bakefont3 kerning information (as rendered by example-gl.c)**  
+
 
 ![Example bakefont3 handwriting font](./docs/handwriting.png)
-**Example bakefont3 handwriting font (realtime rendering using example-gl.c)**
+
+**Example bakefont3 handwriting font (realtime rendering using example-gl.c)**  
 
 
 ## Features ##
