@@ -5,7 +5,7 @@ atlas and exporting metrics and kerning information, and a C library for
 loading that information.
 
 **Pack glyphs efficiently into a texture atlas**  
-(using ./example-generate.py)
+(using example-generate.py)
 
 ![Example bakefont3 generated texture atlases](./docs/example.png)
 
@@ -50,10 +50,12 @@ loading that information.
 * not ideal for rotated text (decent results with supersampling?)
 * does not include a layout engine - just exports the metrics that one would use
     (but see example simple layout in `example-gl.c`)
-* does not support RGBA glyphs - e.g. full colour emojis
+* does not support RGBA glyphs - e.g. full colour emojis (yet)
 
-Bakefont3 does not export vertical kerning information. This can
-easily be fixed - please get in touch if you can help.
+Bakefont3 does not export vertical kerning information for vertical fonts.
+This can easily be fixed - please get in touch if you can help. This isn't
+a technical barrier: I just don't know what the correct result looks like
+and I don't have any fonts to test with.
 
 
 ## Example Usage ##
