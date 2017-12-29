@@ -660,6 +660,8 @@ int main(int argc, char *argv[])
         // components (UV), stride in bytes, and offset
         glBufferData(GL_ARRAY_BUFFER, vertexes * vertex_bytes, tmp, GL_DYNAMIC_DRAW);
         
+        // FIXME -- this should all be combined into one vertex buffer instead
+        // FIXME -- of uploading data four times
         
         // make the texture active in texture unit 0
         glActiveTexture(GL_TEXTURE0);
