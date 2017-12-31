@@ -85,7 +85,7 @@ struct bf3_filelike
     
     // copy at most `numbytes` from ptr + offset into dest, and return
     // the number of bytes copied.
-    size_t (*read)(bf3_filelike *filelike, char *dest, size_t offset, size_t numbytes);
+    size_t (*read)(char *dest, bf3_filelike *filelike, size_t offset, size_t numbytes);
 };
 
 
@@ -239,7 +239,8 @@ size_t bf3_header_peek(bf3_filelike *filelike);
 
 // Read the bf3 header into a buf, `hdr`, of at least size `header_size`.
 // Use the header size returned previously by `bf3_header_peek`.
-bool bf3_header_load(bf3_info *info, bf3_filelike *filelike, char *hdr, size_t header_size);
+// Also stores information in `info`.
+bool bf3_header_load(bf3_info *info, char *hdr, bf3_filelike *filelike, size_t header_size);
 
 // Get a font by Font ID. The font ID is between 0 and (num_fonts - 1), where
 // `num_fonts` is the `num_fonts` property of the `bf3_info` structure returned

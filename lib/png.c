@@ -119,7 +119,8 @@ bool read_png(image *img, FILE *fp)
 
     // PNG has allocated rows for us.
     // Although this is less efficient, for ease of implementation lets
-    // for now just copy this into our own structure.
+    // for now just copy this into our own structure. Doing this ourselves
+    // would need logic for interlaced PNGs.
     png_bytep *row_pointers;
     row_pointers = png_get_rows(png_ptr, info_ptr);
     

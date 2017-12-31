@@ -80,7 +80,7 @@ size_t bf3_header_peek(bf3_filelike *filelike)
     char buf[20];
     uint16_t size;
     
-    size_t was_read = filelike->read(filelike, buf, 0, 20);
+    size_t was_read = filelike->read(buf, filelike, 0, 20);
     if (was_read < 20) { return 0; }
     if (0 != memcmp(buf, "BAKEFONTv3r1", 12)) { return 0; }
     
@@ -90,7 +90,7 @@ size_t bf3_header_peek(bf3_filelike *filelike)
 }
 
 
-bool bf3_header_load(bf3_info *info, bf3_filelike *filelike, char *hdr, size_t header_size)
+bool bf3_header_load(bf3_info *info, char *hdr, bf3_filelike *filelike, size_t header_size)
 {
     // HEADER - 24 byte block
     // b"BAKEFONTv3r0"  #  0 | 12 | magic bytes, version 3 revision 0
@@ -102,7 +102,7 @@ bool bf3_header_load(bf3_info *info, bf3_filelike *filelike, char *hdr, size_t h
 
     int w, h, d, num_fonts, num_modes, num_tables;
 
-    size_t was_read = filelike->read(filelike, hdr, 0, header_size);
+    size_t was_read = filelike->read(hdr, filelike, 0, header_size);
     if (was_read < header_size) { goto fail; }
     
     uint16_t v[3];
@@ -250,7 +250,7 @@ bool bf3_metrics_load(char *metrics, bf3_filelike *filelike, bf3_table *table)
 {
     if (table->metrics_size < 4) { goto fail; }
     
-    size_t was_read = filelike->read(filelike, metrics, table->metrics_offset, table->metrics_size);
+    size_t was_read = filelike->read(metrics, filelike, table->metrics_offset, table->metrics_size);
     if (was_read < table->metrics_size) { goto fail; }
     
     if (0 != memcmp(metrics, "GSET", 4)) { goto fail; }
@@ -270,7 +270,7 @@ bool bf3_kerning_load(char *kerning, bf3_filelike *filelike, bf3_table *table)
 {
     if (table->kerning_size < 4) { goto fail; }
     
-    size_t was_read = filelike->read(filelike, kerning, table->kerning_offset, table->kerning_size);
+    size_t was_read = filelike->read(kerning, filelike,table->kerning_offset, table->kerning_size);
     if (was_read < table->kerning_size) { goto fail; }
     
     if (0 != memcmp(kerning, "KERN", 4)) { goto fail; }

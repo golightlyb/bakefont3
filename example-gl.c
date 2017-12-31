@@ -189,7 +189,7 @@ GLuint create_vbo(size_t size)
 // data and a pointer to a function that can read from that data at a given
 // offset. Here's an implementation for reading from a FILE *.
 
-size_t (read_FILE)(bf3_filelike *filelike, char *dest, size_t offset, size_t numbytes)
+size_t (read_FILE)(char *dest, bf3_filelike *filelike, size_t offset, size_t numbytes)
 {
     FILE *src = (void *) filelike->ptr;
     
@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
     
     // parse the header and store some initial info
     bf3_info info;
-    if (!bf3_header_load(&info, &data_reader, hdr, header_size))
+    if (!bf3_header_load(&info, hdr, &data_reader, header_size))
         { fprintf(stderr, "Error reading header\n"); return -1; }
 
     if ((info.width < atlas.width) && (info.height < atlas.height))
